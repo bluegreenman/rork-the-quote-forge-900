@@ -20,6 +20,7 @@ class QuoteForgeEngine {
   private stockPacks: Map<string, StockQuote[]> = new Map();
   private quoteCategories: string[] = [];
   private quoteQueue: StockQuote[] = [];
+  private lastQuoteId: string | null = null;
 
   private shuffleArray<T>(arr: T[]): T[] {
     const a = [...arr];
@@ -85,29 +86,70 @@ class QuoteForgeEngine {
   }
 
   getRandomQuote(): StockQuote | null {
-    if (!this.quoteQueue || this.quoteQueue.length === 0) {
-      console.log('[QuoteForge] Queue empty, rebuilding...');
-      this.rebuildQuoteQueue();
-    }
+    const allQuotes: StockQuote[] = [];
+    
+    this.stockPacks.forEach((pack, packName) => {
+      if (!Array.isArray(pack) || pack.length === 0) {
+        console.log(`[QuoteForge] Pack '${packName}' is empty or invalid.`);
+        return;
+      }
+      allQuotes.push(...pack);
+    });
 
-    if (!this.quoteQueue || this.quoteQueue.length === 0) {
-      console.warn('[QuoteForge] getRandomQuote: queue still empty after rebuild');
+    if (allQuotes.length === 0) {
+      console.warn('[QuoteForge] getRandomQuote: no stock quotes available');
       return null;
     }
 
-    const next = this.quoteQueue.shift();
-    
-    if (!next) {
-      console.warn('[QuoteForge] getRandomQuote: shift returned undefined');
-      return null;
+    if (allQuotes.length === 1) {
+      const only = allQuotes[0];
+      this.lastQuoteId = only.id;
+      console.log('[QuoteForge] ✨ Only one stock quote available, returning it');
+      console.log(`[QuoteForge]   Pack: ${only.category}`);
+      console.log(`[QuoteForge]   ID: ${only.id}`);
+      console.log(`[QuoteForge]   Text preview: "${only.text.substring(0, 60)}..."`);
+      return only;
     }
-    
-    console.log(`[QuoteForge] ✨ QUOTE SELECTED from pack: ${next.category}`);
-    console.log(`[QuoteForge]    Quote ID: ${next.id}`);
-    console.log(`[QuoteForge]    Queue remaining: ${this.quoteQueue.length} quotes`);
-    console.log(`[QuoteForge]    Text preview: "${next.text.substring(0, 60)}..."`);
-    
-    return next;
+
+    let chosen: StockQuote | null = null;
+    let attempts = 0;
+    const maxAttempts = 3;
+
+    while (attempts < maxAttempts) {
+      const randomValue = Math.random();
+      const randomIndex = Math.floor(randomValue * allQuotes.length);
+      const candidate = allQuotes[randomIndex];
+
+      if (!candidate) {
+        attempts++;
+        continue;
+      }
+
+      if (!this.lastQuoteId || candidate.id !== this.lastQuoteId) {
+        chosen = candidate;
+        console.log('[QuoteForge] RANDOM PICK:');
+        console.log(`[QuoteForge]   Random value: ${randomValue}`);
+        console.log(`[QuoteForge]   Index: ${randomIndex} / ${allQuotes.length}`);
+        break;
+      }
+
+      attempts++;
+    }
+
+    if (!chosen) {
+      chosen = allQuotes[0];
+      console.log('[QuoteForge] Fallback: using first quote in allQuotes');
+    }
+
+    this.lastQuoteId = chosen.id;
+
+    console.log('[QuoteForge] ✨ STOCK QUOTE SELECTED');
+    console.log(`[QuoteForge]   Pack: ${chosen.category}`);
+    console.log(`[QuoteForge]   ID: ${chosen.id}`);
+    console.log(`[QuoteForge]   Text preview: "${chosen.text.substring(0, 60)}..."`);
+    console.log(`[QuoteForge]   Total stock quotes loaded: ${allQuotes.length}`);
+
+    return chosen;
   }
 
   getAllStockQuotes(): StockQuote[] {
