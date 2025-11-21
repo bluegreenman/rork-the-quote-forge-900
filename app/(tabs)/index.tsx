@@ -3,7 +3,7 @@ import { getThemeColors } from "../../constants/themes";
 import { getXPProgress, RARITY_CONFIG } from "../../constants/game";
 import { pickAndParseTextFile } from "../../utils/fileParser";
 import { Sparkles, Upload, TrendingUp, Clock, Volume2, VolumeX, Infinity } from "lucide-react-native";
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -18,6 +18,7 @@ import { Quote, Boon } from "../../types/game";
 import { useFocusEffect } from "@react-navigation/native";
 import { useTts } from "../../hooks/useTts";
 import { useAutoMode } from "../../hooks/useAutoMode";
+import { ForgeRandomEngine, ForgeQuote } from "../../utils/forgeRandomEngine";
 
 export default function QuoteGeneratorScreen() {
   const { state, theme, readQuote, addQuotes, isLoaded, startSession, endSession, getSessionInfo, setFocusMode } = useGame();
@@ -32,7 +33,45 @@ export default function QuoteGeneratorScreen() {
   const scaleAnim = useState(new Animated.Value(1))[0];
   const boonFadeAnim = useState(new Animated.Value(0))[0];
 
+  const forgeEngineRef = useRef<ForgeRandomEngine | null>(null);
+
   const { speak, stop, isSpeaking } = useTts();
+
+  const buildForgeQuotePool = useCallback((): ForgeQuote[] => {
+    const pool: ForgeQuote[] = [];
+
+    for (const file of state.parsedFiles) {
+      for (const quote of file.quotes) {
+        if (!quote.text || !quote.text.trim()) continue;
+
+        pool.push({
+          id: quote.id,
+          fileId: file.fileId,
+          fileName: file.fileName,
+          text: quote.text,
+          index: quote.index,
+          length: quote.length,
+        });
+      }
+    }
+
+    console.log("[Forge Engine] Built pool with", pool.length, "quotes from", state.parsedFiles.length, "file(s)");
+    return pool;
+  }, [state.parsedFiles]);
+
+  useEffect(() => {
+    if (!isLoaded || state.parsedFiles.length === 0) return;
+
+    const pool = buildForgeQuotePool();
+
+    if (!forgeEngineRef.current) {
+      console.log("[Forge Engine] Initializing new engine");
+      forgeEngineRef.current = new ForgeRandomEngine(pool);
+    } else {
+      console.log("[Forge Engine] Rebuilding queue with updated pool");
+      forgeEngineRef.current.rebuildQueue(pool);
+    }
+  }, [isLoaded, state.parsedFiles, buildForgeQuotePool]);
 
   const handleNextQuote = useCallback(() => {
     const sessionInfo = getSessionInfo();
@@ -40,11 +79,38 @@ export default function QuoteGeneratorScreen() {
       console.log("[Forge Session] FORGE SESSION STARTED");
       startSession("questing");
     }
-    
+
+    const engine = forgeEngineRef.current;
+    if (!engine) {
+      console.log("[Forge Engine] Engine not initialized");
+      return;
+    }
+
+    if (!engine.hasQuotes()) {
+      console.log("[Forge Engine] Queue empty, rebuilding from current pool");
+      const pool = buildForgeQuotePool();
+      engine.rebuildQueue(pool);
+    }
+
+    const nextForgeQuote = engine.getNextQuote();
+    if (!nextForgeQuote) {
+      console.log("[Forge Engine] No quotes available");
+      return;
+    }
+
+    console.log("[Forge Engine] Selected quote from", nextForgeQuote.fileName);
+
     const result = readQuote();
 
     if (result.quote) {
-      setCurrentQuote(result.quote);
+      const displayQuote: Quote = {
+        id: nextForgeQuote.id,
+        text: nextForgeQuote.text,
+        fileOrigin: nextForgeQuote.fileName,
+        index: nextForgeQuote.index,
+        length: nextForgeQuote.length,
+      };
+      setCurrentQuote(displayQuote);
       setLastXP(result.xpGained);
 
       Animated.sequence([
@@ -84,7 +150,7 @@ export default function QuoteGeneratorScreen() {
         setTimeout(() => setShowLevelUp(false), 3000);
       }
     }
-  }, [readQuote, scaleAnim, boonFadeAnim, getSessionInfo, startSession]);
+  }, [readQuote, scaleAnim, boonFadeAnim, getSessionInfo, startSession, buildForgeQuotePool]);
 
   const {
     enabled: isAutoModeActive,
