@@ -2,7 +2,7 @@
  * THE QUOTE FORGE - SYSTEM LOGIC ENGINE
  * 
  * Global quote management system for VerseForge app.
- * Provides stock quote packs and a stable randomizer.
+ * Provides stock quote packs and a stable, shuffle-based randomizer.
  */
 
 export interface StockQuote {
@@ -19,6 +19,32 @@ export interface StockPack {
 class QuoteForgeEngine {
   private stockPacks: Map<string, StockQuote[]> = new Map();
   private quoteCategories: string[] = [];
+  private quoteQueue: StockQuote[] = [];
+
+  private shuffleArray<T>(arr: T[]): T[] {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  private rebuildQuoteQueue(): void {
+    const allQuotes: StockQuote[] = [];
+    this.stockPacks.forEach(pack => {
+      allQuotes.push(...pack);
+    });
+
+    if (allQuotes.length === 0) {
+      console.warn('[QuoteForge] rebuildQuoteQueue: no quotes available');
+      this.quoteQueue = [];
+      return;
+    }
+
+    this.quoteQueue = this.shuffleArray(allQuotes);
+    console.log(`[QuoteForge] rebuilt quote queue with ${this.quoteQueue.length} quotes from ${this.stockPacks.size} packs`);
+  }
 
   loadStockPack(packName: string, quotesArray: any[]): string {
     if (!this.stockPacks.has(packName)) {
@@ -44,30 +70,24 @@ class QuoteForgeEngine {
   }
 
   getRandomQuote(): StockQuote | null {
-    const categories = Array.from(this.stockPacks.keys());
-    if (categories.length === 0) {
-      console.log("[QuoteForge] No stock packs loaded");
+    if (!this.quoteQueue || this.quoteQueue.length === 0) {
+      this.rebuildQuoteQueue();
+    }
+
+    if (!this.quoteQueue || this.quoteQueue.length === 0) {
+      console.warn('[QuoteForge] getRandomQuote: queue still empty after rebuild');
       return null;
     }
 
-    const allQuotes: StockQuote[] = [];
-    categories.forEach(cat => {
-      const pack = this.stockPacks.get(cat);
-      if (pack) {
-        allQuotes.push(...pack);
-      }
-    });
-
-    if (allQuotes.length === 0) {
-      console.log("[QuoteForge] No quotes available in stock packs");
-      return null;
-    }
-
-    const index = Math.floor(Math.random() * allQuotes.length);
-    const quote = allQuotes[index];
+    const next = this.quoteQueue.shift();
     
-    console.log("[QuoteForge] Selected quote from:", quote.category);
-    return quote;
+    if (!next) {
+      console.warn('[QuoteForge] getRandomQuote: shift returned undefined');
+      return null;
+    }
+    
+    console.log(`[QuoteForge] next quote: id=${next.id}, category=${next.category}, queue remaining: ${this.quoteQueue.length}`);
+    return next;
   }
 
   getAllStockQuotes(): StockQuote[] {
