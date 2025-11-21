@@ -1,0 +1,214 @@
+/**
+ * THE QUOTE FORGE - SYSTEM LOGIC ENGINE
+ * 
+ * Global quote management system for VerseForge app.
+ * Provides stock quote packs and a stable randomizer.
+ */
+
+export interface StockQuote {
+  id: string;
+  category: string;
+  text: string;
+}
+
+export interface StockPack {
+  name: string;
+  quotes: StockQuote[];
+}
+
+class QuoteForgeEngine {
+  private stockPacks: Map<string, StockQuote[]> = new Map();
+  private quoteCategories: string[] = [];
+
+  loadStockPack(packName: string, quotesArray: any[]): string {
+    if (!this.stockPacks.has(packName)) {
+      this.stockPacks.set(packName, []);
+    }
+
+    const cleaned = quotesArray
+      .filter(q => q && q.id && q.text && q.category)
+      .map(q => ({
+        id: String(q.id),
+        category: String(q.category),
+        text: String(q.text),
+      }));
+
+    this.stockPacks.set(packName, cleaned);
+
+    if (!this.quoteCategories.includes(packName)) {
+      this.quoteCategories.push(packName);
+    }
+
+    console.log(`[QuoteForge] Loaded ${cleaned.length} quotes into '${packName}'`);
+    return `Loaded ${cleaned.length} quotes into '${packName}'`;
+  }
+
+  getRandomQuote(): StockQuote | null {
+    const categories = Array.from(this.stockPacks.keys());
+    if (categories.length === 0) {
+      console.log("[QuoteForge] No stock packs loaded");
+      return null;
+    }
+
+    const allQuotes: StockQuote[] = [];
+    categories.forEach(cat => {
+      const pack = this.stockPacks.get(cat);
+      if (pack) {
+        allQuotes.push(...pack);
+      }
+    });
+
+    if (allQuotes.length === 0) {
+      console.log("[QuoteForge] No quotes available in stock packs");
+      return null;
+    }
+
+    const index = Math.floor(Math.random() * allQuotes.length);
+    const quote = allQuotes[index];
+    
+    console.log("[QuoteForge] Selected quote from:", quote.category);
+    return quote;
+  }
+
+  getAllStockQuotes(): StockQuote[] {
+    const allQuotes: StockQuote[] = [];
+    this.stockPacks.forEach(pack => {
+      allQuotes.push(...pack);
+    });
+    return allQuotes;
+  }
+
+  getPackNames(): string[] {
+    return Array.from(this.stockPacks.keys());
+  }
+
+  getPackQuotes(packName: string): StockQuote[] {
+    return this.stockPacks.get(packName) || [];
+  }
+
+  clearAllPacks(): void {
+    this.stockPacks.clear();
+    this.quoteCategories = [];
+    console.log("[QuoteForge] All stock packs cleared");
+  }
+}
+
+export const quoteForge = new QuoteForgeEngine();
+
+/**
+ * Load Stock Pack #1: Radiant Resolve (108 quotes)
+ */
+export function loadRadiantResolve(): void {
+  const radiantResolveQuotes = [
+    { id: "radiant_resolve_001", category: "Radiant Resolve", text: "You have survived every single day you thought you couldn't. Remember that." },
+    { id: "radiant_resolve_002", category: "Radiant Resolve", text: "Today will not defeat you; it will reveal how unbreakable you really are." },
+    { id: "radiant_resolve_003", category: "Radiant Resolve", text: "Your future self is already cheering for you. Don't walk away from them." },
+    { id: "radiant_resolve_004", category: "Radiant Resolve", text: "You are not behind; you are precisely on the step you are learning from." },
+    { id: "radiant_resolve_005", category: "Radiant Resolve", text: "Every tiny, unseen effort is quietly building the life you keep praying for." },
+    { id: "radiant_resolve_006", category: "Radiant Resolve", text: "Courage rarely feels like roaring; most days it feels like showing up anyway." },
+    { id: "radiant_resolve_007", category: "Radiant Resolve", text: "You are allowed to be both exhausted and unstoppable at the very same time." },
+    { id: "radiant_resolve_008", category: "Radiant Resolve", text: "Do not underestimate the holy power of simply trying again today." },
+    { id: "radiant_resolve_009", category: "Radiant Resolve", text: "Your pace is sacred. Rushing will not deliver you where grace is leading." },
+    { id: "radiant_resolve_010", category: "Radiant Resolve", text: "Even on days you feel dim, you are still a lamp lit by Eternity." },
+    { id: "radiant_resolve_011", category: "Radiant Resolve", text: "You don't need to see the whole road; you just need one honest step." },
+    { id: "radiant_resolve_012", category: "Radiant Resolve", text: "There is a version of you on the other side of this that is grateful you stayed." },
+    { id: "radiant_resolve_013", category: "Radiant Resolve", text: "You are not failing; you are forging. Fire never feels like progress at first." },
+    { id: "radiant_resolve_014", category: "Radiant Resolve", text: "The mountain ahead is not an enemy; it is the shape of your next strength." },
+    { id: "radiant_resolve_015", category: "Radiant Resolve", text: "Showing up with a shaking heart still counts as showing up with courage." },
+    { id: "radiant_resolve_016", category: "Radiant Resolve", text: "Every time you choose love over fear, the universe quietly adjusts around you." },
+    { id: "radiant_resolve_017", category: "Radiant Resolve", text: "You are allowed to rest; you are not allowed to believe you are worthless." },
+    { id: "radiant_resolve_018", category: "Radiant Resolve", text: "Your heart has been broken, but it still believes in light. That is power." },
+    { id: "radiant_resolve_019", category: "Radiant Resolve", text: "You have no idea how many people are breathing easier because you exist." },
+    { id: "radiant_resolve_020", category: "Radiant Resolve", text: "Progress is often disguised as repetition. Don't despise the quiet training grounds." },
+    { id: "radiant_resolve_021", category: "Radiant Resolve", text: "You can start again without hating who you were when you fell." },
+    { id: "radiant_resolve_022", category: "Radiant Resolve", text: "It's okay if your miracle today is simply that you did not give up." },
+    { id: "radiant_resolve_023", category: "Radiant Resolve", text: "You are not too late; you are right on time to choose a different direction." },
+    { id: "radiant_resolve_024", category: "Radiant Resolve", text: "The same soul that survived yesterday can be trusted to navigate today." },
+    { id: "radiant_resolve_025", category: "Radiant Resolve", text: "Do not compare your raw, sacred process to someone else's edited highlight reel." },
+    { id: "radiant_resolve_026", category: "Radiant Resolve", text: "You are not fragile; you are finely made. There is a difference." },
+    { id: "radiant_resolve_027", category: "Radiant Resolve", text: "Sometimes the bravest thing you can say is, 'I will try again tomorrow.'" },
+    { id: "radiant_resolve_028", category: "Radiant Resolve", text: "Your wounds are not the end of your story; they are the ink of your testimony." },
+    { id: "radiant_resolve_029", category: "Radiant Resolve", text: "When everything feels heavy, carry only the next right choice." },
+    { id: "radiant_resolve_030", category: "Radiant Resolve", text: "You were not sent here to impress everyone; you were sent here to awaken." },
+    { id: "radiant_resolve_031", category: "Radiant Resolve", text: "Even if you whisper your prayer, Heaven still hears it at full volume." },
+    { id: "radiant_resolve_032", category: "Radiant Resolve", text: "Your limitations are real, but so is the grace that keeps expanding them." },
+    { id: "radiant_resolve_033", category: "Radiant Resolve", text: "You are not just getting through this; you are being quietly remade by it." },
+    { id: "radiant_resolve_034", category: "Radiant Resolve", text: "Let go of who you were supposed to be and serve who you are becoming." },
+    { id: "radiant_resolve_035", category: "Radiant Resolve", text: "Your smallest consistent effort will outrun your loudest occasional burst." },
+    { id: "radiant_resolve_036", category: "Radiant Resolve", text: "Some seasons are not about blooming; they are about growing roots in secret." },
+    { id: "radiant_resolve_037", category: "Radiant Resolve", text: "You have permission to be a work in progress and a masterpiece simultaneously." },
+    { id: "radiant_resolve_038", category: "Radiant Resolve", text: "Remember how far you've come; even your starting line was once a distant dream." },
+    { id: "radiant_resolve_039", category: "Radiant Resolve", text: "You are allowed to protect your peace like it is something holy—because it is." },
+    { id: "radiant_resolve_040", category: "Radiant Resolve", text: "Every 'I can't' you've said before was followed by a moment where you actually did." },
+    { id: "radiant_resolve_041", category: "Radiant Resolve", text: "The heaviness you feel is not weakness; it is the weight of transformation." },
+    { id: "radiant_resolve_042", category: "Radiant Resolve", text: "Do not rush out of the cocoon. Wings need time to remember what they are." },
+    { id: "radiant_resolve_043", category: "Radiant Resolve", text: "Some days your only job is to keep the flame of hope from going out." },
+    { id: "radiant_resolve_044", category: "Radiant Resolve", text: "You are not your worst decision; you are your next surrendered choice." },
+    { id: "radiant_resolve_045", category: "Radiant Resolve", text: "You can't always control the storm, but you can anchor where you tie your heart." },
+    { id: "radiant_resolve_046", category: "Radiant Resolve", text: "You did not lose time; you gathered wisdom you could not have learned otherwise." },
+    { id: "radiant_resolve_047", category: "Radiant Resolve", text: "Be gentle with yourself; you are carrying chapters only God has fully read." },
+    { id: "radiant_resolve_048", category: "Radiant Resolve", text: "Every time you choose to heal instead of hide, you bless people you haven't met yet." },
+    { id: "radiant_resolve_049", category: "Radiant Resolve", text: "Your value has never depended on how well today is going." },
+    { id: "radiant_resolve_050", category: "Radiant Resolve", text: "You are more than the story your fear tells about you." },
+    { id: "radiant_resolve_051", category: "Radiant Resolve", text: "The same light that made the stars is patient with your slow, holy progress." },
+    { id: "radiant_resolve_052", category: "Radiant Resolve", text: "Even when you feel scattered, your soul is still held in perfect order." },
+    { id: "radiant_resolve_053", category: "Radiant Resolve", text: "You don't need louder motivation; you need a deeper why. You already have it." },
+    { id: "radiant_resolve_054", category: "Radiant Resolve", text: "You have walked through nights that would have swallowed other people whole." },
+    { id: "radiant_resolve_055", category: "Radiant Resolve", text: "Your tears have never been a sign of failure; they are evidence you still care." },
+    { id: "radiant_resolve_056", category: "Radiant Resolve", text: "There is a quiet, undefeatable core inside you that remembers why you're here." },
+    { id: "radiant_resolve_057", category: "Radiant Resolve", text: "You are stronger than the thing that tried to convince you to quit." },
+    { id: "radiant_resolve_058", category: "Radiant Resolve", text: "You don't have to fix everything today; you just have to stay available to grace." },
+    { id: "radiant_resolve_059", category: "Radiant Resolve", text: "Even when you feel lost, you are still on a map Heaven understands perfectly." },
+    { id: "radiant_resolve_060", category: "Radiant Resolve", text: "You are not empty; you are being cleared for something wild and beautiful." },
+    { id: "radiant_resolve_061", category: "Radiant Resolve", text: "Some of your greatest breakthroughs will look like very ordinary Tuesdays at first." },
+    { id: "radiant_resolve_062", category: "Radiant Resolve", text: "You are allowed to be proud of how quietly you kept choosing the light." },
+    { id: "radiant_resolve_063", category: "Radiant Resolve", text: "Your heart is not a burden; it is the compass that keeps saving your life." },
+    { id: "radiant_resolve_064", category: "Radiant Resolve", text: "You have survived storms that never made it into your biography. Heaven saw them all." },
+    { id: "radiant_resolve_065", category: "Radiant Resolve", text: "If you can still love after everything, you are walking in rare power." },
+    { id: "radiant_resolve_066", category: "Radiant Resolve", text: "You're not starting from scratch; you're starting from experience. That is leverage." },
+    { id: "radiant_resolve_067", category: "Radiant Resolve", text: "Let today be proof that you can move gently and still move forward." },
+    { id: "radiant_resolve_068", category: "Radiant Resolve", text: "You are never disqualified from beginning again in the eyes of Love." },
+    { id: "radiant_resolve_069", category: "Radiant Resolve", text: "You are not late; you are layered. Your story needed this depth." },
+    { id: "radiant_resolve_070", category: "Radiant Resolve", text: "You do not need everyone to believe in you; just refuse to abandon yourself." },
+    { id: "radiant_resolve_071", category: "Radiant Resolve", text: "Every time you choose healing over repeating, the whole lineage breathes easier." },
+    { id: "radiant_resolve_072", category: "Radiant Resolve", text: "You are tougher than your mood, kinder than your fears, and deeper than your doubts." },
+    { id: "radiant_resolve_073", category: "Radiant Resolve", text: "You deserved gentleness even on the days you only offered yourself survival." },
+    { id: "radiant_resolve_074", category: "Radiant Resolve", text: "The dark tried to convince you it was permanent. Look at you, still glowing." },
+    { id: "radiant_resolve_075", category: "Radiant Resolve", text: "You have not missed your moment; you are slowly becoming the person who can hold it." },
+    { id: "radiant_resolve_076", category: "Radiant Resolve", text: "Even if no one claps today, your courage still shook something in the unseen." },
+    { id: "radiant_resolve_077", category: "Radiant Resolve", text: "You are allowed to outgrow spaces that keep asking you to shrink." },
+    { id: "radiant_resolve_078", category: "Radiant Resolve", text: "May you never again confuse chaos with passion or anxiety with destiny." },
+    { id: "radiant_resolve_079", category: "Radiant Resolve", text: "You can be sacred and sweaty, holy and human, radiant and very much in process." },
+    { id: "radiant_resolve_080", category: "Radiant Resolve", text: "Your heart keeps choosing compassion in a world that rewards apathy. That's heroic." },
+    { id: "radiant_resolve_081", category: "Radiant Resolve", text: "You are not here to win every argument; you are here to keep your soul alive." },
+    { id: "radiant_resolve_082", category: "Radiant Resolve", text: "You can honor your pain without letting it rewrite your identity." },
+    { id: "radiant_resolve_083", category: "Radiant Resolve", text: "Healing is not linear, but it is real. Look at how your reactions are changing." },
+    { id: "radiant_resolve_084", category: "Radiant Resolve", text: "You are not the chaos you walked through; you are the calm you are learning to keep." },
+    { id: "radiant_resolve_085", category: "Radiant Resolve", text: "You can be shaking and still step forward. Nerves don't cancel destiny." },
+    { id: "radiant_resolve_086", category: "Radiant Resolve", text: "Your dreams are not random; they are coordinates to the work your soul came to do." },
+    { id: "radiant_resolve_087", category: "Radiant Resolve", text: "The page you're on right now would once have looked impossible. Honor it." },
+    { id: "radiant_resolve_088", category: "Radiant Resolve", text: "You can set boundaries without apologizing for needing oxygen for your soul." },
+    { id: "radiant_resolve_089", category: "Radiant Resolve", text: "You keep thinking you're starting over; really, you're starting higher each time." },
+    { id: "radiant_resolve_090", category: "Radiant Resolve", text: "You are not too much; you are precisely the size of the calling on your life." },
+    { id: "radiant_resolve_091", category: "Radiant Resolve", text: "The gentleness you crave from others—offer a fraction of it to yourself today." },
+    { id: "radiant_resolve_092", category: "Radiant Resolve", text: "You didn't come this far to only rebuild the same cage from prettier materials." },
+    { id: "radiant_resolve_093", category: "Radiant Resolve", text: "You are strong enough to choose the slower, truer path instead of the quick escape." },
+    { id: "radiant_resolve_094", category: "Radiant Resolve", text: "Every time you return to love after disappointment, you rewrite what's possible." },
+    { id: "radiant_resolve_095", category: "Radiant Resolve", text: "You don't need all the answers; you need the courage to live inside the questions." },
+    { id: "radiant_resolve_096", category: "Radiant Resolve", text: "Your scars are proof that light reached you in time, not that darkness won." },
+    { id: "radiant_resolve_097", category: "Radiant Resolve", text: "You can forgive yourself without pretending you didn't know better. Growth hurts." },
+    { id: "radiant_resolve_098", category: "Radiant Resolve", text: "Sometimes strength is not moving on; it is staying present with what still aches." },
+    { id: "radiant_resolve_099", category: "Radiant Resolve", text: "You are allowed to glow differently than people expected. Your path is bespoke." },
+    { id: "radiant_resolve_100", category: "Radiant Resolve", text: "You are not surviving by accident; you are here because Love keeps choosing you." },
+    { id: "radiant_resolve_101", category: "Radiant Resolve", text: "Your soul remembers a joy deeper than this moment's confusion. Lean toward that." },
+    { id: "radiant_resolve_102", category: "Radiant Resolve", text: "You can be tired and still anointed, drained and still undeniably chosen for this." },
+    { id: "radiant_resolve_103", category: "Radiant Resolve", text: "Every time you choose honesty over hiding, your future becomes a little lighter." },
+    { id: "radiant_resolve_104", category: "Radiant Resolve", text: "You are not alone in this; invisible hands have been steadying you for years." },
+    { id: "radiant_resolve_105", category: "Radiant Resolve", text: "The fact that you still care about goodness after everything is a victory." },
+    { id: "radiant_resolve_106", category: "Radiant Resolve", text: "You are not unfinished because you are imperfect; you are alive, therefore evolving." },
+    { id: "radiant_resolve_107", category: "Radiant Resolve", text: "There is nothing ordinary about a heart that keeps rising after invisible wars." },
+    { id: "radiant_resolve_108", category: "Radiant Resolve", text: "Your existence is already a miracle; everything else is just detail and devotion." },
+  ];
+
+  quoteForge.loadStockPack("Radiant Resolve", radiantResolveQuotes);
+}

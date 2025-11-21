@@ -22,6 +22,7 @@ import { INITIAL_BADGES } from "../constants/badges";
 import { createBackup, validateBackup, migrateGameState, createBackupV2, validateBackupV2, restoreFromBackupV2 } from "../utils/backup";
 import { buildItemArtPrompt, generateItemArt, canGenerateItemArt } from "../utils/itemArt";
 import { generateThemeTag } from "../utils/themeTag";
+import { quoteForge, loadRadiantResolve, StockQuote } from "../utils/quoteForge";
 
 const STORAGE_KEY = "verseforge_game_state";
 const THEME_KEY = "verseforge_theme";
@@ -79,6 +80,16 @@ const useGameContext = () => {
     lastMinuteMarker: 0,
   });
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [stockPackLoaded, setStockPackLoaded] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (!stockPackLoaded) {
+      console.log("[QuoteForge] Initializing stock packs...");
+      loadRadiantResolve();
+      setStockPackLoaded(true);
+      console.log("[QuoteForge] Stock pack 'Radiant Resolve' loaded with 108 quotes");
+    }
+  }, [stockPackLoaded]);
 
   useEffect(() => {
     const loadData = async () => {
@@ -458,6 +469,16 @@ const useGameContext = () => {
     [checkBadges]
   );
 
+  const convertStockQuoteToQuote = useCallback((stockQuote: StockQuote, index: number): Quote => {
+    return {
+      id: stockQuote.id,
+      text: stockQuote.text,
+      fileOrigin: stockQuote.category,
+      index,
+      length: stockQuote.text.length,
+    };
+  }, []);
+
   const readQuote = useCallback((): {
     quote: Quote | null;
     xpGained: number;
@@ -492,7 +513,104 @@ const useGameContext = () => {
       quotesToPickFrom = currentState.quotes;
       
       if (quotesToPickFrom.length === 0) {
-        console.log("[Forge] No quotes available");
+        console.log("[Forge] No user-uploaded quotes found, checking stock packs...");
+        const stockQuote = quoteForge.getRandomQuote();
+        
+        if (stockQuote) {
+          const quote = convertStockQuoteToQuote(stockQuote, 0);
+          const xpGained = calculateXPForQuote(quote.length);
+          
+          console.log("[Forge] Using stock quote from:", stockQuote.category);
+          
+          const boonRarity = rollForBoon();
+          let boon: Boon | null = null;
+
+          if (boonRarity) {
+            const itemType = generateRandomItemType();
+            const boonName = generateBoonName(itemType);
+            const slotType = getSlotTypeForItem(itemType);
+            const statBonuses = generateStatBonuses(boonRarity);
+            
+            const tempBoon: Boon = {
+              id: `${Date.now()}_${Math.random()}`,
+              name: boonName,
+              description: generateBoonDescription(boonName),
+              rarity: boonRarity,
+              dateAcquired: new Date().toISOString(),
+              itemType,
+              slotType,
+              statBonuses,
+            };
+            
+            const equippedBoons: Boon[] = [];
+            const slots: SlotType[] = ["head", "hands", "heart", "mind", "light", "relic"];
+            for (const slot of slots) {
+              const boonId = currentState.equipment[slot];
+              if (boonId) {
+                const equippedBoon = currentState.boons.find((b) => b.id === boonId);
+                if (equippedBoon) {
+                  equippedBoons.push(equippedBoon);
+                }
+              }
+            }
+            const statBonusesArray = equippedBoons.map((b) => b.statBonuses);
+            const playerStats = calculateCharacterStats(currentState.level, statBonusesArray, currentState.totalQuestingTimeMinutes);
+            
+            const playerContext = {
+              level: currentState.level,
+              destiny: currentState.destiny,
+              stats: playerStats,
+            };
+            
+            const themeTag = generateThemeTag(tempBoon, playerContext);
+            tempBoon.themeTag = themeTag;
+            
+            boon = tempBoon;
+          }
+
+          const newXP = currentState.xp + xpGained;
+          const oldLevel = currentState.level;
+          const newLevel = calculateLevel(newXP);
+          const leveledUp = newLevel > oldLevel;
+
+          setState((prev) => {
+            const today = new Date().toDateString();
+            const lastRead = prev.lastReadDate
+              ? new Date(prev.lastReadDate).toDateString()
+              : null;
+            let newStreak = prev.streakDays;
+
+            if (lastRead !== today) {
+              const yesterday = new Date();
+              yesterday.setDate(yesterday.getDate() - 1);
+              const yesterdayStr = yesterday.toDateString();
+
+              if (lastRead === yesterdayStr) {
+                newStreak += 1;
+              } else if (lastRead === null) {
+                newStreak = 1;
+              } else {
+                newStreak = 1;
+              }
+            }
+
+            return {
+              ...prev,
+              xp: newXP,
+              level: newLevel,
+              totalQuotesRead: prev.totalQuotesRead + 1,
+              boons: boon ? [...prev.boons, boon] : prev.boons,
+              streakDays: newStreak,
+              lastReadDate: new Date().toISOString(),
+            };
+          });
+
+          setTimeout(checkBadges, 100);
+
+          return { quote, xpGained, boon, leveledUp, newLevel };
+        }
+        
+        console.log("[Forge] No quotes available (neither user nor stock)");
         return {
           quote: null,
           xpGained: 0,
@@ -658,7 +776,7 @@ const useGameContext = () => {
     setTimeout(checkBadges, 100);
 
     return { quote, xpGained, boon, leveledUp, newLevel };
-  }, [state, checkBadges]);
+  }, [state, checkBadges, convertStockQuoteToQuote]);
 
   const changeTheme = useCallback((newTheme: Theme) => {
     setTheme(newTheme);
