@@ -22,7 +22,7 @@ import { INITIAL_BADGES } from "../constants/badges";
 import { createBackup, validateBackup, migrateGameState, createBackupV2, validateBackupV2, restoreFromBackupV2 } from "../utils/backup";
 import { buildItemArtPrompt, generateItemArt, canGenerateItemArt } from "../utils/itemArt";
 import { generateThemeTag } from "../utils/themeTag";
-import { quoteForge, loadRadiantResolve, StockQuote } from "../utils/quoteForge";
+import { quoteForge, loadRadiantResolve, loadGritAndGlory, StockQuote } from "../utils/quoteForge";
 
 const STORAGE_KEY = "verseforge_game_state";
 const THEME_KEY = "verseforge_theme";
@@ -86,8 +86,11 @@ const useGameContext = () => {
     if (!stockPackLoaded) {
       console.log("[QuoteForge] Initializing stock packs...");
       loadRadiantResolve();
+      loadGritAndGlory();
       setStockPackLoaded(true);
-      console.log("[QuoteForge] Stock pack 'Radiant Resolve' loaded with 108 quotes");
+      console.log("[QuoteForge] Stock packs loaded:");
+      console.log("  - Radiant Resolve (108 quotes)");
+      console.log("  - Grit & Glory (108 quotes)");
     }
   }, [stockPackLoaded]);
 
