@@ -32,7 +32,12 @@ class QuoteForgeEngine {
 
   private rebuildQuoteQueue(): void {
     const allQuotes: StockQuote[] = [];
-    this.stockPacks.forEach(pack => {
+    
+    console.log('[QuoteForge] 🔄 REBUILDING QUOTE QUEUE');
+    console.log(`[QuoteForge] Available packs: ${this.stockPacks.size}`);
+    
+    this.stockPacks.forEach((pack, packName) => {
+      console.log(`[QuoteForge]   - ${packName}: ${pack.length} quotes`);
       allQuotes.push(...pack);
     });
 
@@ -43,7 +48,17 @@ class QuoteForgeEngine {
     }
 
     this.quoteQueue = this.shuffleArray(allQuotes);
-    console.log(`[QuoteForge] rebuilt quote queue with ${this.quoteQueue.length} quotes from ${this.stockPacks.size} packs`);
+    console.log(`[QuoteForge] ✅ Queue rebuilt with ${this.quoteQueue.length} total quotes`);
+    console.log(`[QuoteForge] Queue is now shuffled and ready`);
+    
+    const packDistribution = new Map<string, number>();
+    this.quoteQueue.forEach(q => {
+      packDistribution.set(q.category, (packDistribution.get(q.category) || 0) + 1);
+    });
+    console.log('[QuoteForge] Pack distribution in queue:');
+    packDistribution.forEach((count, pack) => {
+      console.log(`[QuoteForge]   - ${pack}: ${count} quotes`);
+    });
   }
 
   loadStockPack(packName: string, quotesArray: any[]): string {
@@ -71,6 +86,7 @@ class QuoteForgeEngine {
 
   getRandomQuote(): StockQuote | null {
     if (!this.quoteQueue || this.quoteQueue.length === 0) {
+      console.log('[QuoteForge] Queue empty, rebuilding...');
       this.rebuildQuoteQueue();
     }
 
@@ -86,7 +102,11 @@ class QuoteForgeEngine {
       return null;
     }
     
-    console.log(`[QuoteForge] next quote: id=${next.id}, category=${next.category}, queue remaining: ${this.quoteQueue.length}`);
+    console.log(`[QuoteForge] ✨ QUOTE SELECTED from pack: ${next.category}`);
+    console.log(`[QuoteForge]    Quote ID: ${next.id}`);
+    console.log(`[QuoteForge]    Queue remaining: ${this.quoteQueue.length} quotes`);
+    console.log(`[QuoteForge]    Text preview: "${next.text.substring(0, 60)}..."`);
+    
     return next;
   }
 
