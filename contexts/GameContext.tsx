@@ -541,9 +541,10 @@ const useGameContext = () => {
       console.log("[Forge] Random Oracle - All Scriptures mode: picking from ALL quotes across ALL files");
       
       quotesToPickFrom = currentState.quotes;
+      console.log("[Forge] User quotes available:", quotesToPickFrom.length);
       
       if (quotesToPickFrom.length === 0) {
-        console.log("[Forge] No user-uploaded quotes found, checking stock packs...");
+        console.log("[Forge] ⚠️ NO USER QUOTES - ENTERING STOCK PACK MODE");
         const stockQuote = quoteForge.getRandomQuote();
         
         if (stockQuote) {
