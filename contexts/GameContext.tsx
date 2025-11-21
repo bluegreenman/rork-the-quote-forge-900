@@ -249,6 +249,15 @@ const useGameContext = () => {
           const { stockParsedFiles, stockQuotes } = buildStockData();
           console.log("[Stock Packs] Injecting", stockParsedFiles.length, "stock pack(s) with", stockQuotes.length, "quotes");
           
+          const existingStockStats = migratedState.scriptureStats;
+          const newStockStats: { [fileId: string]: ScriptureStats } = {};
+          
+          stockParsedFiles.forEach(stockFile => {
+            if (!existingStockStats[stockFile.fileId]) {
+              newStockStats[stockFile.fileId] = initializeScriptureStats(stockFile.fileId, stockFile.fileName);
+            }
+          });
+          
           const finalState = {
             ...migratedState,
             parsedFiles: [
@@ -259,6 +268,10 @@ const useGameContext = () => {
               ...stockQuotes,
               ...migratedState.quotes.filter(q => !q.isStock),
             ],
+            scriptureStats: {
+              ...existingStockStats,
+              ...newStockStats,
+            },
           };
           
           setState(finalState);
@@ -268,10 +281,16 @@ const useGameContext = () => {
           const { stockParsedFiles, stockQuotes } = buildStockData();
           console.log("[Stock Packs] Injecting", stockParsedFiles.length, "stock pack(s) with", stockQuotes.length, "quotes (fresh install)");
           
+          const stockStats: { [fileId: string]: ScriptureStats } = {};
+          stockParsedFiles.forEach(stockFile => {
+            stockStats[stockFile.fileId] = initializeScriptureStats(stockFile.fileId, stockFile.fileName);
+          });
+          
           const freshState = {
             ...DEFAULT_STATE,
             parsedFiles: stockParsedFiles,
             quotes: stockQuotes,
+            scriptureStats: stockStats,
           };
           
           setState(freshState);

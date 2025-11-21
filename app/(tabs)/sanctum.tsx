@@ -292,7 +292,99 @@ export default function SanctumScreen() {
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={styles.scriptureList}
               >
-                {state.parsedFiles.map((file) => {
+                {state.parsedFiles.filter(f => f.isStock).map((file) => {
+                  const stats = state.scriptureStats[file.fileId];
+                  const isSelected = selectedFileId === file.fileId;
+                  const scriptureProgress = stats ? getScriptureXPProgress(stats.localXp, stats.localLevel) : null;
+                  const timeSpent = stats?.timeSpentMinutes || 0;
+                  const timeText = timeSpent >= 60 
+                    ? `${Math.floor(timeSpent / 60)}h ${timeSpent % 60}m`
+                    : `${timeSpent}m`;
+
+                  return (
+                    <TouchableOpacity
+                      key={file.fileId}
+                      style={[
+                        styles.scriptureCard,
+                        {
+                          backgroundColor: isSelected ? colors.primary : colors.surface,
+                          borderColor: isSelected ? colors.primary : colors.border,
+                        },
+                      ]}
+                      onPress={() => setSelectedFileId(file.fileId)}
+                    >
+                      <BookOpen 
+                        size={20} 
+                        color={isSelected ? "#FFFFFF" : colors.primary} 
+                      />
+                      <Text
+                        style={[
+                          styles.scriptureCardTitle,
+                          { color: isSelected ? "#FFFFFF" : colors.text },
+                        ]}
+                        numberOfLines={2}
+                      >
+                        {file.fileName}
+                      </Text>
+                      {stats && (
+                        <>
+                          <Text
+                            style={[
+                              styles.scriptureCardMastery,
+                              { color: isSelected ? "#FFFFFF" : colors.primary },
+                            ]}
+                          >
+                            {stats.masteryTier}
+                          </Text>
+                          <Text
+                            style={[
+                              styles.scriptureCardStats,
+                              { color: isSelected ? "rgba(255,255,255,0.8)" : colors.textSecondary },
+                            ]}
+                          >
+                            Level {stats.localLevel} · {stats.quotesRead} read
+                          </Text>
+                          <Text
+                            style={[
+                              styles.scriptureCardTime,
+                              { color: isSelected ? "rgba(255,255,255,0.7)" : colors.textSecondary },
+                            ]}
+                          >
+                            {timeText} spent
+                          </Text>
+                          {scriptureProgress && (
+                            <View style={styles.scriptureProgressContainer}>
+                              <View
+                                style={[
+                                  styles.scriptureProgressBg,
+                                  { backgroundColor: isSelected ? "rgba(255,255,255,0.2)" : colors.border },
+                                ]}
+                              >
+                                <View
+                                  style={[
+                                    styles.scriptureProgressBar,
+                                    {
+                                      backgroundColor: isSelected ? "#FFFFFF" : colors.primary,
+                                      width: `${Math.min(scriptureProgress.percentage, 100)}%`,
+                                    },
+                                  ]}
+                                />
+                              </View>
+                            </View>
+                          )}
+                        </>
+                      )}
+                    </TouchableOpacity>
+                  );
+                })}
+                
+                {state.parsedFiles.filter(f => !f.isStock).length > 0 && (
+                  <View style={[styles.scriptureListDivider, { backgroundColor: colors.border }]}>
+                    <Text style={[styles.scriptureListDividerText, { color: colors.textSecondary }]}>Uploaded</Text>
+                  </View>
+                )}
+                
+                {state.parsedFiles.filter(f => !f.isStock).map((file) => {
                   const stats = state.scriptureStats[file.fileId];
                   const isSelected = selectedFileId === file.fileId;
                   const scriptureProgress = stats ? getScriptureXPProgress(stats.localXp, stats.localLevel) : null;
@@ -704,6 +796,23 @@ const styles = StyleSheet.create({
   scriptureList: {
     gap: 12,
     paddingRight: 20,
+    alignItems: 'center' as const,
+  },
+  scriptureListDivider: {
+    width: 1,
+    height: 140,
+    justifyContent: 'center' as const,
+    alignItems: 'center' as const,
+    paddingVertical: 8,
+  },
+  scriptureListDividerText: {
+    fontSize: 10,
+    fontWeight: '700' as const,
+    textTransform: 'uppercase' as const,
+    letterSpacing: 1,
+    transform: [{ rotate: '90deg' }],
+    width: 80,
+    textAlign: 'center' as const,
   },
   scriptureCard: {
     width: 160,
