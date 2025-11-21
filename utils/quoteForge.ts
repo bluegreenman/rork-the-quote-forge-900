@@ -104,31 +104,22 @@ class QuoteForgeEngine {
     console.log(`[QuoteForge] 🎲 Total stock quotes available: ${allQuotes.length}`);
     console.log(`[QuoteForge] 🎯 Last used pack: ${this.lastCategory || 'none'}`);
 
-    // Try to find a quote from a DIFFERENT pack than lastCategory
-    let attempts = 0;
-    const maxAttempts = 50;
-    let chosen: StockQuote | null = null;
-
-    while (attempts < maxAttempts && !chosen) {
-      const randomIndex = Math.floor(Math.random() * allQuotes.length);
-      const candidate = allQuotes[randomIndex];
-
-      // If this is our first quote OR it's from a different pack, use it
-      if (!this.lastCategory || candidate.category !== this.lastCategory) {
-        chosen = candidate;
-        console.log(`[QuoteForge] ✅ Found different pack on attempt ${attempts + 1}`);
-        break;
+    // FILTER out quotes from the last pack BEFORE randomizing
+    let eligibleQuotes = allQuotes;
+    if (this.lastCategory) {
+      const filteredQuotes = allQuotes.filter(q => q.category !== this.lastCategory);
+      // Only use filtered list if it's not empty (i.e., more than one pack loaded)
+      if (filteredQuotes.length > 0) {
+        eligibleQuotes = filteredQuotes;
+        console.log(`[QuoteForge] 🔄 Filtered out ${this.lastCategory}, now ${eligibleQuotes.length} eligible quotes`);
+      } else {
+        console.log('[QuoteForge] ⚠️ Only one pack loaded, allowing repeat');
       }
-
-      attempts++;
     }
 
-    // Fallback: if all attempts failed (only one pack loaded), just pick randomly
-    if (!chosen) {
-      const randomIndex = Math.floor(Math.random() * allQuotes.length);
-      chosen = allQuotes[randomIndex];
-      console.log('[QuoteForge] ⚠️ All attempts used same pack (only one pack available?)');
-    }
+    // Now pick randomly from ONLY the eligible quotes
+    const randomIndex = Math.floor(Math.random() * eligibleQuotes.length);
+    const chosen = eligibleQuotes[randomIndex];
 
     if (!chosen) {
       console.warn('[QuoteForge] getRandomQuote: failed to select a quote');

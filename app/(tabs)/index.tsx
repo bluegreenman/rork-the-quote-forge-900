@@ -184,6 +184,8 @@ export default function QuoteGeneratorScreen() {
 
   const stockPacksAvailable = quoteForge.getAllStockQuotes().length > 0;
   const hasQuotes = state.quotes.length > 0 || stockPacksAvailable;
+  const stockPackNames = quoteForge.getPackNames();
+  const totalStockQuotes = quoteForge.getAllStockQuotes().length;
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -275,10 +277,10 @@ export default function QuoteGeneratorScreen() {
               <Sparkles size={20} color={colors.primary} />
               <View style={styles.stockPackInfo}>
                 <Text style={[styles.stockPackTitle, { color: colors.primary }]}>
-                  Radiant Resolve Pack Active
+                  {stockPackNames.length} Stock Packs Active
                 </Text>
                 <Text style={[styles.stockPackDesc, { color: colors.textSecondary }]}>
-                  108 inspirational quotes • Upload your own scriptures anytime
+                  {totalStockQuotes} inspirational quotes • Upload your own scriptures anytime
                 </Text>
               </View>
             </View>
