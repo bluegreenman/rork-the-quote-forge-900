@@ -3,6 +3,7 @@ import { getThemeColors } from "../../constants/themes";
 import { getXPProgress, RARITY_CONFIG } from "../../constants/game";
 import { pickAndParseTextFile } from "../../utils/fileParser";
 import { Sparkles, Upload, TrendingUp, Clock, Volume2, VolumeX, Infinity } from "lucide-react-native";
+import { quoteForge } from "../../utils/quoteForge";
 import React, { useState, useCallback, useEffect } from "react";
 import {
   View,
@@ -181,7 +182,8 @@ export default function QuoteGeneratorScreen() {
     }
   };
 
-  const hasQuotes = state.quotes.length > 0;
+  const stockPacksAvailable = quoteForge.getAllStockQuotes().length > 0;
+  const hasQuotes = state.quotes.length > 0 || stockPacksAvailable;
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -246,12 +248,12 @@ export default function QuoteGeneratorScreen() {
         {!hasQuotes ? (
           <View style={styles.emptyState}>
             <Text style={[styles.emptyTitle, { color: colors.text }]}>
-              Begin Your Quest
+              No Quotes Available
             </Text>
             <Text
               style={[styles.emptySubtitle, { color: colors.textSecondary }]}
             >
-              Upload scriptures to embark on your questing journey
+              Upload scriptures to begin your journey
             </Text>
             <TouchableOpacity
               style={[
@@ -267,6 +269,165 @@ export default function QuoteGeneratorScreen() {
               </Text>
             </TouchableOpacity>
           </View>
+        ) : state.quotes.length === 0 && stockPacksAvailable ? (
+          <>
+            <View style={[styles.stockPackBanner, { backgroundColor: colors.primary + "15", borderColor: colors.primary }]}>
+              <Sparkles size={20} color={colors.primary} />
+              <View style={styles.stockPackInfo}>
+                <Text style={[styles.stockPackTitle, { color: colors.primary }]}>
+                  Radiant Resolve Pack Active
+                </Text>
+                <Text style={[styles.stockPackDesc, { color: colors.textSecondary }]}>
+                  108 inspirational quotes • Upload your own scriptures anytime
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.statsRow}>
+              <View
+                style={[styles.statCard, { backgroundColor: colors.surface }]}
+              >
+                <Text style={[styles.statValue, { color: colors.text }]}>
+                  {state.totalQuotesRead}
+                </Text>
+                <Text
+                  style={[styles.statLabel, { color: colors.textSecondary }]}
+                >
+                  Quotes Read
+                </Text>
+              </View>
+              <View
+                style={[styles.statCard, { backgroundColor: colors.surface }]}
+              >
+                <Text style={[styles.statValue, { color: colors.text }]}>
+                  {state.boons.length}
+                </Text>
+                <Text
+                  style={[styles.statLabel, { color: colors.textSecondary }]}
+                >
+                  Boons Acquired
+                </Text>
+              </View>
+            </View>
+            
+            <View style={[styles.sessionCard, { backgroundColor: colors.primary + "22", borderColor: colors.primary }]}>
+              <Clock size={20} color={colors.primary} />
+              <View style={styles.sessionInfo}>
+                <Text style={[styles.sessionLabel, { color: colors.textSecondary }]}>Current Session</Text>
+                <Text style={[styles.sessionTime, { color: colors.primary }]}>
+                  {getSessionInfo().isActive && getSessionInfo().type === "questing" ? (
+                    <>
+                      {Math.floor(getSessionInfo().elapsedMinutes / 60) > 0 ? `${Math.floor(getSessionInfo().elapsedMinutes / 60)}h ` : ''}
+                      {getSessionInfo().elapsedMinutes % 60}m {getSessionInfo().elapsedSeconds % 60}s
+                    </>
+                  ) : '0m 0s'}
+                </Text>
+              </View>
+            </View>
+
+            {currentQuote && (
+              <View style={styles.ttsControls}>
+                <TouchableOpacity
+                  style={[styles.ttsButton, { backgroundColor: colors.surface }]}
+                  onPress={handleSpeakerPress}
+                  accessibilityLabel="Read this text aloud"
+                >
+                  {isSpeaking() ? (
+                    <VolumeX size={20} color={colors.primary} />
+                  ) : (
+                    <Volume2 size={20} color={colors.primary} />
+                  )}
+                  <Text style={[styles.ttsButtonText, { color: colors.text }]}>
+                    {isSpeaking() ? 'Stop' : 'Listen'}
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[
+                    styles.autoModeButton,
+                    {
+                      backgroundColor: isAutoModeActive
+                        ? colors.primary
+                        : colors.surface,
+                    },
+                  ]}
+                  onPress={handleAutoModePress}
+                  accessibilityLabel="Enable auto reading mode"
+                >
+                  <Infinity
+                    size={20}
+                    color={isAutoModeActive ? '#FFFFFF' : colors.primary}
+                  />
+                  <Text
+                    style={[
+                      styles.autoModeButtonText,
+                      { color: isAutoModeActive ? '#FFFFFF' : colors.text },
+                    ]}
+                  >
+                    {isAutoModeActive ? 'Auto Mode On' : 'Auto Mode'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
+            <Animated.View
+              style={[
+                styles.quoteCard,
+                { backgroundColor: colors.surface, transform: [{ scale: scaleAnim }] },
+              ]}
+            >
+              {currentQuote ? (
+                <>
+                  <Text style={[styles.quoteText, { color: colors.text }]}>
+                    &ldquo;{currentQuote.text}&rdquo;
+                  </Text>
+                  <View style={styles.quoteFooter}>
+                    <Text
+                      style={[styles.quoteSource, { color: colors.textSecondary }]}
+                    >
+                      {currentQuote.fileOrigin}
+                    </Text>
+                    {lastXP > 0 && (
+                      <Text style={[styles.xpGained, { color: colors.success }]}>
+                        +{lastXP} XP
+                      </Text>
+                    )}
+                  </View>
+                </>
+              ) : (
+                <Text
+                  style={[
+                    styles.placeholderText,
+                    { color: colors.textSecondary },
+                  ]}
+                >
+                  Tap the button below to forge a verse
+                </Text>
+              )}
+            </Animated.View>
+
+            <TouchableOpacity
+              style={[styles.rollButton, { backgroundColor: colors.primary }]}
+              onPress={handleRoll}
+            >
+              <Sparkles size={28} color="#FFFFFF" />
+              <Text style={styles.rollButtonText}>Roll for Quote</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.uploadButtonSmall,
+                { backgroundColor: colors.surfaceHigh },
+              ]}
+              onPress={handleUploadFile}
+              disabled={isUploading}
+            >
+              <Upload size={20} color={colors.text} />
+              <Text style={[styles.uploadButtonSmallText, { color: colors.text }]}>
+                {isUploading ? "Uploading..." : "Upload Your Own Scripture"}
+              </Text>
+            </TouchableOpacity>
+          </>
         ) : (
           <>
             <View style={[styles.questHeader, { backgroundColor: colors.primary + "22", borderColor: colors.primary }]}>
@@ -681,5 +842,26 @@ const styles = StyleSheet.create({
   autoModeButtonText: {
     fontSize: 15,
     fontWeight: "600" as const,
+  },
+  stockPackBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 16,
+    borderRadius: 16,
+    borderWidth: 2,
+    marginBottom: 24,
+    gap: 12,
+  },
+  stockPackInfo: {
+    flex: 1,
+  },
+  stockPackTitle: {
+    fontSize: 16,
+    fontWeight: "700" as const,
+    marginBottom: 4,
+  },
+  stockPackDesc: {
+    fontSize: 13,
+    lineHeight: 18,
   },
 });
