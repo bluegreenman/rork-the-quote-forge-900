@@ -19,6 +19,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import { useTts } from "../../hooks/useTts";
 import { useAutoMode } from "../../hooks/useAutoMode";
 import { ForgeRandomEngine, ForgeQuote } from "../../utils/forgeRandomEngine";
+import { getStockQuotesForForge } from "../../utils/stockPacks";
 
 export default function QuoteGeneratorScreen() {
   const { state, theme, readQuote, addQuotes, isLoaded, startSession, endSession, getSessionInfo, setFocusMode } = useGame();
@@ -55,7 +56,10 @@ export default function QuoteGeneratorScreen() {
       }
     }
 
-    console.log("[Forge Engine] Built pool with", pool.length, "quotes from", state.parsedFiles.length, "file(s)");
+    const stockQuotes = getStockQuotesForForge();
+    pool.push(...stockQuotes);
+
+    console.log("[Forge Engine] Built pool with", pool.length, "quotes from", state.parsedFiles.length, "file(s) +", stockQuotes.length, "stock quotes");
     return pool;
   }, [state.parsedFiles]);
 
