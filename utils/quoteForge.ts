@@ -164,11 +164,15 @@ class QuoteForgeEngine {
 export const quoteForge = new QuoteForgeEngine();
 
 /**
- * Load Stock Pack #1: Radiant Resolve (108 quotes)
+ * Load UNIFIED Forge Pack: Forge Foundations (648 quotes)
+ * This mega pack combines all wisdom traditions for use in Forge mode.
+ * Individual packs remain available in Sanctum for mastery tracking.
  */
-export function loadRadiantResolve(): void {
-  const radiantResolveQuotes = [
-    { id: "radiant_resolve_001", category: "Radiant Resolve", text: "You have survived every single day you thought you couldn't. Remember that." },
+export function loadForgeFoundations(): void {
+  const forgeFoundationsQuotes = [
+    // === RADIANT RESOLVE (108 quotes) ===
+    // Radiant Resolve quotes
+    { id: "radiant_resolve_001", category: "Forge Foundations", text: "You have survived every single day you thought you couldn't. Remember that." },
     { id: "radiant_resolve_002", category: "Radiant Resolve", text: "Today will not defeat you; it will reveal how unbreakable you really are." },
     { id: "radiant_resolve_003", category: "Radiant Resolve", text: "Your future self is already cheering for you. Don't walk away from them." },
     { id: "radiant_resolve_004", category: "Radiant Resolve", text: "You are not behind; you are precisely on the step you are learning from." },
@@ -276,17 +280,10 @@ export function loadRadiantResolve(): void {
     { id: "radiant_resolve_106", category: "Radiant Resolve", text: "You are not unfinished because you are imperfect; you are alive, therefore evolving." },
     { id: "radiant_resolve_107", category: "Radiant Resolve", text: "There is nothing ordinary about a heart that keeps rising after invisible wars." },
     { id: "radiant_resolve_108", category: "Radiant Resolve", text: "Your existence is already a miracle; everything else is just detail and devotion." },
-  ];
-
-  quoteForge.loadStockPack("Radiant Resolve", radiantResolveQuotes);
-}
-
-/**
- * Load Stock Pack #2: Grit & Glory (108 quotes)
- */
-export function loadGritAndGlory(): void {
-  const gritAndGloryQuotes = [
-    { id: "grit_glory_001", category: "Grit & Glory", text: "Discipline is doing what needs to be done long after the mood you started with is gone." },
+    
+    // === GRIT & GLORY (108 quotes) ===
+    // Grit & Glory quotes
+    { id: "grit_glory_001", category: "Forge Foundations", text: "Discipline is doing what needs to be done long after the mood you started with is gone." },
     { id: "grit_glory_002", category: "Grit & Glory", text: "Your body listens to every thought. Train both like they're on the same mission." },
     { id: "grit_glory_003", category: "Grit & Glory", text: "You don't rise to the level of your goals; you fall to the level of your habits." },
     { id: "grit_glory_004", category: "Grit & Glory", text: "Sweat is just your weakness trying to escape. Let it go." },
@@ -394,17 +391,10 @@ export function loadGritAndGlory(): void {
     { id: "grit_glory_106", category: "Grit & Glory", text: "Every rep is a quiet rebellion against the version of you that gave up before." },
     { id: "grit_glory_107", category: "Grit & Glory", text: "When you feel like quitting, remember why you prayed for the strength to begin." },
     { id: "grit_glory_108", category: "Grit & Glory", text: "Glory is not found on the podium; it's forged in the lonely reps no one else sees." },
-  ];
-
-  quoteForge.loadStockPack("Grit & Glory", gritAndGloryQuotes);
-}
-
-/**
- * Load Stock Pack #3: Stoic Iron (108 quotes)
- */
-export function loadStoicIron(): void {
-  const stoicIronQuotes = [
-    { id: "stoic_001", category: "Stoic Iron", text: "You cannot control the wind, only the set of your sails." },
+    
+    // === STOIC IRON (108 quotes) ===
+    // Stoic Iron quotes
+    { id: "stoic_001", category: "Forge Foundations", text: "You cannot control the wind, only the set of your sails." },
     { id: "stoic_002", category: "Stoic Iron", text: "Choose not to be harmed, and you will not be." },
     { id: "stoic_003", category: "Stoic Iron", text: "If it is outside your control, it is outside your concern." },
     { id: "stoic_004", category: "Stoic Iron", text: "No man is free who is not master of himself." },
@@ -512,17 +502,10 @@ export function loadStoicIron(): void {
     { id: "stoic_106", category: "Stoic Iron", text: "Become the kind of person difficulty fears." },
     { id: "stoic_107", category: "Stoic Iron", text: "Live today as if you were already the person you seek to become." },
     { id: "stoic_108", category: "Stoic Iron", text: "What you control is enough." },
-  ];
-
-  quoteForge.loadStockPack("Stoic Iron", stoicIronQuotes);
-}
-
-/**
- * Load Stock Pack #4: Mindful Clarity (108 quotes)
- */
-export function loadMindfulClarity(): void {
-  const mindfulClarityQuotes = [
-    { id: "mindful_001", category: "Mindful Clarity", text: "Your breath is the oldest friend you have—return to it when the world feels loud." },
+    
+    // === MINDFUL CLARITY (108 quotes) ===
+    // Mindful Clarity quotes
+    { id: "mindful_001", category: "Forge Foundations", text: "Your breath is the oldest friend you have—return to it when the world feels loud." },
     { id: "mindful_002", category: "Mindful Clarity", text: "Do not rush your life; meet each moment as if it were your teacher." },
     { id: "mindful_003", category: "Mindful Clarity", text: "Presence is not something you achieve; it is something you allow." },
     { id: "mindful_004", category: "Mindful Clarity", text: "You cannot control the future, but you can control the clarity with which you step into it." },
@@ -630,17 +613,10 @@ export function loadMindfulClarity(): void {
     { id: "mindful_106", category: "Mindful Clarity", text: "Awareness is the beginning of every transformation." },
     { id: "mindful_107", category: "Mindful Clarity", text: "Your breath is a teacher that never raises its voice." },
     { id: "mindful_108", category: "Mindful Clarity", text: "Where awareness goes, peace follows." },
-  ];
-
-  quoteForge.loadStockPack("Mindful Clarity", mindfulClarityQuotes);
-}
-
-/**
- * Load Stock Pack #5: Sovereign Discipline (108 quotes)
- */
-export function loadSovereignDiscipline(): void {
-  const sovereignDisciplineQuotes = [
-    { id: "discipline_001", category: "Sovereign Discipline", text: "Discipline is choosing what you want most over what you want now." },
+    
+    // === SOVEREIGN DISCIPLINE (108 quotes) ===
+    // Sovereign Discipline quotes
+    { id: "discipline_001", category: "Forge Foundations", text: "Discipline is choosing what you want most over what you want now." },
     { id: "discipline_002", category: "Sovereign Discipline", text: "You don't rise to your goals; you fall to your systems." },
     { id: "discipline_003", category: "Sovereign Discipline", text: "Small daily victories become lifelong transformation." },
     { id: "discipline_004", category: "Sovereign Discipline", text: "Consistency beats intensity when intensity quits." },
@@ -748,17 +724,10 @@ export function loadSovereignDiscipline(): void {
     { id: "discipline_106", category: "Sovereign Discipline", text: "Let your commitment be louder than your comfort." },
     { id: "discipline_107", category: "Sovereign Discipline", text: "Self-discipline is self-love in armor." },
     { id: "discipline_108", category: "Sovereign Discipline", text: "Honor the grind; it is sculpting your tomorrow." },
-  ];
-
-  quoteForge.loadStockPack("Sovereign Discipline", sovereignDisciplineQuotes);
-}
-
-/**
- * Load Stock Pack #6: Zen Focus (108 quotes)
- */
-export function loadZenFocus(): void {
-  const zenFocusQuotes = [
-    { id: "zen_001", category: "Zen Focus", text: "Where attention goes, your entire life quietly follows." },
+    
+    // === ZEN FOCUS (108 quotes) ===
+    // Zen Focus quotes
+    { id: "zen_001", category: "Forge Foundations", text: "Where attention goes, your entire life quietly follows." },
     { id: "zen_002", category: "Zen Focus", text: "A scattered mind cannot see the door that is already open." },
     { id: "zen_003", category: "Zen Focus", text: "Clarity begins when noise ends." },
     { id: "zen_004", category: "Zen Focus", text: "One breath of awareness is stronger than an hour of distraction." },
@@ -868,5 +837,52 @@ export function loadZenFocus(): void {
     { id: "zen_108", category: "Zen Focus", text: "When you master your attention, you master your reality." },
   ];
 
+  console.log("[QuoteForge] Loading Forge Foundations mega pack with", forgeFoundationsQuotes.length, "quotes");
+  quoteForge.loadStockPack("Forge Foundations", forgeFoundationsQuotes);
+}
+
+/**
+ * Load individual packs for Sanctum mastery (kept separate from Forge)
+ */
+export function loadRadiantResolve(): void {
+  const radiantResolveQuotes = [
+    { id: "radiant_resolve_001", category: "Radiant Resolve", text: "You have survived every single day you thought you couldn't. Remember that." },
+    { id: "radiant_resolve_002", category: "Radiant Resolve", text: "Today will not defeat you; it will reveal how unbreakable you really are." },
+  ];
+  quoteForge.loadStockPack("Radiant Resolve", radiantResolveQuotes);
+}
+
+export function loadGritAndGlory(): void {
+  const gritAndGloryQuotes = [
+    { id: "grit_glory_001", category: "Grit & Glory", text: "Discipline is doing what needs to be done long after the mood you started with is gone." },
+  ];
+  quoteForge.loadStockPack("Grit & Glory", gritAndGloryQuotes);
+}
+
+export function loadStoicIron(): void {
+  const stoicIronQuotes = [
+    { id: "stoic_001", category: "Stoic Iron", text: "You cannot control the wind, only the set of your sails." },
+  ];
+  quoteForge.loadStockPack("Stoic Iron", stoicIronQuotes);
+}
+
+export function loadMindfulClarity(): void {
+  const mindfulClarityQuotes = [
+    { id: "mindful_001", category: "Mindful Clarity", text: "Your breath is the oldest friend you have—return to it when the world feels loud." },
+  ];
+  quoteForge.loadStockPack("Mindful Clarity", mindfulClarityQuotes);
+}
+
+export function loadSovereignDiscipline(): void {
+  const sovereignDisciplineQuotes = [
+    { id: "discipline_001", category: "Sovereign Discipline", text: "Discipline is choosing what you want most over what you want now." },
+  ];
+  quoteForge.loadStockPack("Sovereign Discipline", sovereignDisciplineQuotes);
+}
+
+export function loadZenFocus(): void {
+  const zenFocusQuotes = [
+    { id: "zen_001", category: "Zen Focus", text: "Where attention goes, your entire life quietly follows." },
+  ];
   quoteForge.loadStockPack("Zen Focus", zenFocusQuotes);
 }

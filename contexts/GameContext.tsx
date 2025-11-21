@@ -22,7 +22,7 @@ import { INITIAL_BADGES } from "../constants/badges";
 import { createBackup, validateBackup, migrateGameState, createBackupV2, validateBackupV2, restoreFromBackupV2 } from "../utils/backup";
 import { buildItemArtPrompt, generateItemArt, canGenerateItemArt } from "../utils/itemArt";
 import { generateThemeTag } from "../utils/themeTag";
-import { quoteForge, loadRadiantResolve, loadGritAndGlory, loadStoicIron, loadMindfulClarity, loadSovereignDiscipline, loadZenFocus, StockQuote } from "../utils/quoteForge";
+import { quoteForge, loadForgeFoundations, loadRadiantResolve, loadGritAndGlory, loadStoicIron, loadMindfulClarity, loadSovereignDiscipline, loadZenFocus, StockQuote } from "../utils/quoteForge";
 
 const STORAGE_KEY = "verseforge_game_state";
 const THEME_KEY = "verseforge_theme";
@@ -85,20 +85,27 @@ const useGameContext = () => {
   useEffect(() => {
     if (!stockPackLoaded) {
       console.log("[QuoteForge] Initializing stock packs...");
+      
+      // Load the unified Forge Foundations pack (648 quotes for Forge mode)
+      loadForgeFoundations();
+      
+      // Load individual packs for Sanctum mastery tracking
       loadRadiantResolve();
       loadGritAndGlory();
       loadStoicIron();
       loadMindfulClarity();
       loadSovereignDiscipline();
       loadZenFocus();
+      
       setStockPackLoaded(true);
       console.log("[QuoteForge] Stock packs loaded:");
-      console.log("  - Radiant Resolve (108 quotes)");
-      console.log("  - Grit & Glory (108 quotes)");
-      console.log("  - Stoic Iron (108 quotes)");
-      console.log("  - Mindful Clarity (108 quotes)");
-      console.log("  - Sovereign Discipline (108 quotes)");
-      console.log("  - Zen Focus (108 quotes)");
+      console.log("  - Forge Foundations (648 quotes - UNIFIED for Forge)");
+      console.log("  - Radiant Resolve (for Sanctum mastery)");
+      console.log("  - Grit & Glory (for Sanctum mastery)");
+      console.log("  - Stoic Iron (for Sanctum mastery)");
+      console.log("  - Mindful Clarity (for Sanctum mastery)");
+      console.log("  - Sovereign Discipline (for Sanctum mastery)");
+      console.log("  - Zen Focus (for Sanctum mastery)");
     }
   }, [stockPackLoaded]);
 
@@ -544,14 +551,17 @@ const useGameContext = () => {
       console.log("[Forge] User quotes available:", quotesToPickFrom.length);
       
       if (quotesToPickFrom.length === 0) {
-        console.log("[Forge] ⚠️ NO USER QUOTES - ENTERING STOCK PACK MODE");
+        console.log("[Forge] ⚠️ NO USER QUOTES - USING FORGE FOUNDATIONS");
+        console.log("[Forge] Drawing from unified 648-quote Forge Foundations pack");
         const stockQuote = quoteForge.getRandomQuote();
         
         if (stockQuote) {
           const quote = convertStockQuoteToQuote(stockQuote, 0);
           const xpGained = calculateXPForQuote(quote.length);
           
-          console.log("[Forge] Using stock quote from:", stockQuote.category);
+          console.log("[Forge] ✨ Using quote from:", stockQuote.category);
+          console.log("[Forge] Quote ID:", stockQuote.id);
+          console.log("[Forge] Text:", stockQuote.text.substring(0, 60) + "...");
           
           const boonRarity = rollForBoon();
           let boon: Boon | null = null;
