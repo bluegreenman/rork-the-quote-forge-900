@@ -337,7 +337,7 @@ export default function SanctumScreen() {
                             { color: isSelected ? "rgba(255,255,255,0.8)" : colors.textSecondary },
                           ]}
                         >
-                          {file.quotes.length} quotes · Stock Pack
+                          108 quotes · Stock Pack
                         </Text>
                       )}
                       {stats && (
