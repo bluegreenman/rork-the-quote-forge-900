@@ -19,7 +19,7 @@ import {
   getScriptureMasteryTier,
 } from "../constants/game";
 import { INITIAL_BADGES } from "../constants/badges";
-import { validateBackup, migrateGameState, createBackupV2, validateBackupV2, restoreFromBackupV2 } from "../utils/backup";
+import { createBackup, validateBackup, migrateGameState, createBackupV2, validateBackupV2, restoreFromBackupV2 } from "../utils/backup";
 import { buildItemArtPrompt, generateItemArt, canGenerateItemArt } from "../utils/itemArt";
 import { generateThemeTag } from "../utils/themeTag";
 
@@ -458,12 +458,6 @@ const useGameContext = () => {
     [checkBadges]
   );
 
-  const pickRandomQuoteFromPool = useCallback((pool: Quote[]): Quote | null => {
-    if (!pool.length) return null;
-    const index = Math.floor(Math.random() * pool.length);
-    return pool[index];
-  }, []);
-
   const readQuote = useCallback((): {
     quote: Quote | null;
     xpGained: number;
@@ -471,139 +465,143 @@ const useGameContext = () => {
     leveledUp: boolean;
     newLevel: number;
   } => {
-    let quote: Quote | null = null;
-    let xpGained = 0;
-    let boon: Boon | null = null;
-    let leveledUp = false;
-    let newLevel = 1;
+    // Read current state (this still has closure issues but we'll fix separately)
+    let currentState: GameState = state;
+    
+    // Ensure focusState exists with safe default
+    const currentFocus = currentState.focusState && typeof currentState.focusState === 'object'
+      ? { mode: currentState.focusState.mode ?? "all", focusedFileId: currentState.focusState.focusedFileId ?? null }
+      : { mode: "all" as const, focusedFileId: null };
+    
+    let quotesToPickFrom: Quote[] = [];
     let sourceFileId: string | null = null;
-
-    setState((currentState) => {
-      // Ensure focusState exists with safe default
-      const currentFocus = currentState.focusState && typeof currentState.focusState === 'object'
-        ? { mode: currentState.focusState.mode ?? "all", focusedFileId: currentState.focusState.focusedFileId ?? null }
-        : { mode: "all" as const, focusedFileId: null };
+    
+    if (currentFocus.mode === "focus" && currentFocus.focusedFileId) {
+      const focusedFile = currentState.parsedFiles.find((f) => f.fileId === currentFocus.focusedFileId);
+      if (focusedFile && focusedFile.quotes.length > 0) {
+        quotesToPickFrom = focusedFile.quotes;
+        sourceFileId = focusedFile.fileId;
+        console.log("[Forge] FOCUS mode - using", focusedFile.fileName, "with", quotesToPickFrom.length, "quotes");
+      } else {
+        quotesToPickFrom = currentState.quotes;
+        console.log("[Forge] FOCUS mode but no focused file, using all quotes:", quotesToPickFrom.length);
+      }
+    } else {
+      console.log("[Forge] Random Oracle - All Scriptures mode: picking from ALL quotes across ALL files");
       
-      // CRITICAL: Always rebuild the pool fresh from current state
-      // Never use cached or stale arrays
-      
-      // Force "all" mode for Random Oracle regardless of focusState
-      // This prevents sticky focus from locking onto one scripture
-      // Random Oracle - All Scriptures mode
-      // Build fresh pool from ALL quotes across ALL files
-      const quotesToPickFrom = currentState.quotes;
-      const effectiveMode = "all";
-      
-      console.log('[Forge Randomizer] roll', {
-        questMode: 'Random Oracle – All Scriptures',
-        focusState: {
-          mode: currentFocus.mode,
-          focusedFileId: currentFocus.focusedFileId,
-        },
-        effectiveMode,
-        poolSize: quotesToPickFrom.length,
-        scriptureIdsInPool: [...new Set(currentState.parsedFiles.map(f => f.fileId))],
-        scriptureNamesInPool: currentState.parsedFiles.map(f => f.fileName),
-      });
+      quotesToPickFrom = currentState.quotes;
       
       if (quotesToPickFrom.length === 0) {
-        console.log("[Forge Randomizer] No quotes available");
-        quote = null;
-        xpGained = 0;
-        boon = null;
-        leveledUp = false;
-        newLevel = currentState.level;
-        return currentState;
-      }
-
-      // Use pure helper to pick random quote
-      const selectedQuote = pickRandomQuoteFromPool(quotesToPickFrom);
-      
-      if (!selectedQuote) {
-        quote = null;
-        xpGained = 0;
-        boon = null;
-        leveledUp = false;
-        newLevel = currentState.level;
-        return currentState;
-      }
-      
-      // Find which file this quote belongs to for debug logging
-      const selectedFile = currentState.parsedFiles.find((f) =>
-        f.quotes.some((q) => q.id === selectedQuote.id)
-      );
-      console.log("[Forge Randomizer] ===== PICKED QUOTE =====");
-      console.log("[Forge Randomizer] Selected from file:", selectedFile?.fileName || "UNKNOWN");
-      console.log("[Forge Randomizer] Quote preview:", selectedQuote.text.substring(0, 60) + "...");
-      console.log("[Forge Randomizer] Pool had", quotesToPickFrom.length, "quotes from", currentState.parsedFiles.length, "file(s)");
-      console.log("[Forge Randomizer] ==============================");
-      
-      quote = selectedQuote;
-      xpGained = calculateXPForQuote(selectedQuote.length);
-      
-      if (!sourceFileId) {
-        const foundFile = currentState.parsedFiles.find((f) =>
-          f.quotes.some((q) => q.id === selectedQuote.id)
-        );
-        if (foundFile) {
-          sourceFileId = foundFile.fileId;
-        }
-      }
-
-      const boonRarity = rollForBoon();
-
-      if (boonRarity) {
-        const itemType = generateRandomItemType();
-        const boonName = generateBoonName(itemType);
-        const slotType = getSlotTypeForItem(itemType);
-        const statBonuses = generateStatBonuses(boonRarity);
-        
-        const tempBoon: Boon = {
-          id: `${Date.now()}_${Math.random()}`,
-          name: boonName,
-          description: generateBoonDescription(boonName),
-          rarity: boonRarity,
-          dateAcquired: new Date().toISOString(),
-          itemType,
-          slotType,
-          statBonuses,
+        console.log("[Forge] No quotes available");
+        return {
+          quote: null,
+          xpGained: 0,
+          boon: null,
+          leveledUp: false,
+          newLevel: currentState.level,
         };
-        
-        const equippedBoons: Boon[] = [];
-        const slots: SlotType[] = ["head", "hands", "heart", "mind", "light", "relic"];
-        for (const slot of slots) {
-          const boonId = currentState.equipment[slot];
-          if (boonId) {
-            const equippedBoon = currentState.boons.find((b) => b.id === boonId);
-            if (equippedBoon) {
-              equippedBoons.push(equippedBoon);
-            }
+      }
+      
+      console.log("[Forge] Total quote pool:", quotesToPickFrom.length, "quotes from", currentState.parsedFiles.length, "file(s)");
+    }
+    
+    if (quotesToPickFrom.length === 0) {
+      return {
+        quote: null,
+        xpGained: 0,
+        boon: null,
+        leveledUp: false,
+        newLevel: currentState.level,
+      };
+    }
+
+    const randomValue = Math.random();
+    const randomIndex = Math.floor(randomValue * quotesToPickFrom.length);
+    const quote = quotesToPickFrom[randomIndex];
+    
+    // Find which file this quote belongs to for debug logging
+    const selectedFile = currentState.parsedFiles.find((f) =>
+      f.quotes.some((q) => q.id === quote.id)
+    );
+    console.log("[DEBUG RANDOMIZER] ===== NEW QUOTE =====");
+    console.log("[DEBUG RANDOMIZER] Focus mode:", currentFocus.mode);
+    console.log("[DEBUG RANDOMIZER] Focused file ID:", currentFocus.focusedFileId);
+    console.log("[DEBUG RANDOMIZER] Quote pool size:", quotesToPickFrom.length);
+    console.log("[DEBUG RANDOMIZER] Random value:", randomValue);
+    console.log("[DEBUG RANDOMIZER] Selected index:", randomIndex);
+    console.log("[DEBUG RANDOMIZER] Selected from file:", selectedFile?.fileName || "UNKNOWN");
+    console.log("[DEBUG RANDOMIZER] Quote text:", quote.text.substring(0, 80) + "...");
+    console.log("[DEBUG RANDOMIZER] Total files available:", currentState.parsedFiles.map(f => f.fileName).join(", "));
+    console.log("[DEBUG RANDOMIZER] ========================");
+    
+    const xpGained = calculateXPForQuote(quote.length);
+    
+    if (!sourceFileId) {
+      const foundFile = currentState.parsedFiles.find((f) =>
+        f.quotes.some((q) => q.id === quote.id)
+      );
+      if (foundFile) {
+        sourceFileId = foundFile.fileId;
+      }
+    }
+
+    const boonRarity = rollForBoon();
+    let boon: Boon | null = null;
+
+    if (boonRarity) {
+      const itemType = generateRandomItemType();
+      const boonName = generateBoonName(itemType);
+      const slotType = getSlotTypeForItem(itemType);
+      const statBonuses = generateStatBonuses(boonRarity);
+      
+      const tempBoon: Boon = {
+        id: `${Date.now()}_${Math.random()}`,
+        name: boonName,
+        description: generateBoonDescription(boonName),
+        rarity: boonRarity,
+        dateAcquired: new Date().toISOString(),
+        itemType,
+        slotType,
+        statBonuses,
+      };
+      
+      const equippedBoons: Boon[] = [];
+      const slots: SlotType[] = ["head", "hands", "heart", "mind", "light", "relic"];
+      for (const slot of slots) {
+        const boonId = currentState.equipment[slot];
+        if (boonId) {
+          const equippedBoon = currentState.boons.find((b) => b.id === boonId);
+          if (equippedBoon) {
+            equippedBoons.push(equippedBoon);
           }
         }
-        const statBonusesArray = equippedBoons.map((b) => b.statBonuses);
-        const playerStats = calculateCharacterStats(currentState.level, statBonusesArray, currentState.totalQuestingTimeMinutes);
-        
-        const playerContext = {
-          level: currentState.level,
-          destiny: currentState.destiny,
-          stats: playerStats,
-        };
-        
-        const themeTag = generateThemeTag(tempBoon, playerContext);
-        tempBoon.themeTag = themeTag;
-        
-        boon = tempBoon;
       }
+      const statBonusesArray = equippedBoons.map((b) => b.statBonuses);
+      const playerStats = calculateCharacterStats(currentState.level, statBonusesArray, currentState.totalQuestingTimeMinutes);
+      
+      const playerContext = {
+        level: currentState.level,
+        destiny: currentState.destiny,
+        stats: playerStats,
+      };
+      
+      const themeTag = generateThemeTag(tempBoon, playerContext);
+      tempBoon.themeTag = themeTag;
+      
+      boon = tempBoon;
+    }
 
-      const newXP = currentState.xp + xpGained;
-      const oldLevel = currentState.level;
-      newLevel = calculateLevel(newXP);
-      leveledUp = newLevel > oldLevel;
+    const newXP = currentState.xp + xpGained;
+    const oldLevel = currentState.level;
+    const newLevel = calculateLevel(newXP);
+    const leveledUp = newLevel > oldLevel;
+
+    setState((prev) => {
       const today = new Date().toDateString();
-      const lastRead = currentState.lastReadDate
-        ? new Date(currentState.lastReadDate).toDateString()
+      const lastRead = prev.lastReadDate
+        ? new Date(prev.lastReadDate).toDateString()
         : null;
-      let newStreak = currentState.streakDays;
+      let newStreak = prev.streakDays;
 
       if (lastRead !== today) {
         const yesterday = new Date();
@@ -619,15 +617,15 @@ const useGameContext = () => {
         }
       }
       
-      const updatedScriptureStats = { ...currentState.scriptureStats };
+      const updatedScriptureStats = { ...prev.scriptureStats };
       
       if (sourceFileId && updatedScriptureStats[sourceFileId]) {
         // Always use safe default for focusState
-        const currentFocusInState = (currentState.focusState && typeof currentState.focusState === 'object') 
-          ? { mode: currentState.focusState.mode ?? "all", focusedFileId: currentState.focusState.focusedFileId ?? null }
+        const currentFocusInState = (prev.focusState && typeof prev.focusState === 'object') 
+          ? { mode: prev.focusState.mode ?? "all", focusedFileId: prev.focusState.focusedFileId ?? null }
           : { mode: "all" as const, focusedFileId: null };
         const inFocusMode = currentFocusInState.mode === "focus" && currentFocusInState.focusedFileId === sourceFileId;
-        const scriptureXP = calculateScriptureXP(selectedQuote.length, inFocusMode);
+        const scriptureXP = calculateScriptureXP(quote.length, inFocusMode);
         
         const currentStats = updatedScriptureStats[sourceFileId];
         const newLocalXp = currentStats.localXp + scriptureXP;
@@ -646,11 +644,11 @@ const useGameContext = () => {
       }
 
       return {
-        ...currentState,
+        ...prev,
         xp: newXP,
         level: newLevel,
-        totalQuotesRead: currentState.totalQuotesRead + 1,
-        boons: boon ? [...currentState.boons, boon] : currentState.boons,
+        totalQuotesRead: prev.totalQuotesRead + 1,
+        boons: boon ? [...prev.boons, boon] : prev.boons,
         streakDays: newStreak,
         lastReadDate: new Date().toISOString(),
         scriptureStats: updatedScriptureStats,
@@ -660,8 +658,7 @@ const useGameContext = () => {
     setTimeout(checkBadges, 100);
 
     return { quote, xpGained, boon, leveledUp, newLevel };
-  }, [pickRandomQuoteFromPool, checkBadges]);
-
+  }, [state, checkBadges]);
 
   const changeTheme = useCallback((newTheme: Theme) => {
     setTheme(newTheme);
