@@ -22,7 +22,7 @@ import { INITIAL_BADGES } from "../constants/badges";
 import { createBackup, validateBackup, migrateGameState, createBackupV2, validateBackupV2, restoreFromBackupV2 } from "../utils/backup";
 import { buildItemArtPrompt, generateItemArt, canGenerateItemArt } from "../utils/itemArt";
 import { generateThemeTag } from "../utils/themeTag";
-import { quoteForge, loadRadiantResolve, loadGritAndGlory, loadStoicIron, loadMindfulClarity, loadSovereignDiscipline, StockQuote } from "../utils/quoteForge";
+import { quoteForge, loadRadiantResolve, loadGritAndGlory, loadStoicIron, loadMindfulClarity, loadSovereignDiscipline, loadZenFocus, StockQuote } from "../utils/quoteForge";
 
 const STORAGE_KEY = "verseforge_game_state";
 const THEME_KEY = "verseforge_theme";
@@ -90,6 +90,7 @@ const useGameContext = () => {
       loadStoicIron();
       loadMindfulClarity();
       loadSovereignDiscipline();
+      loadZenFocus();
       setStockPackLoaded(true);
       console.log("[QuoteForge] Stock packs loaded:");
       console.log("  - Radiant Resolve (108 quotes)");
@@ -97,6 +98,7 @@ const useGameContext = () => {
       console.log("  - Stoic Iron (108 quotes)");
       console.log("  - Mindful Clarity (108 quotes)");
       console.log("  - Sovereign Discipline (108 quotes)");
+      console.log("  - Zen Focus (108 quotes)");
     }
   }, [stockPackLoaded]);
 
