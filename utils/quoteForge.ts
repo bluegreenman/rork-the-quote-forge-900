@@ -87,46 +87,64 @@ class QuoteForgeEngine {
   }
 
   getRandomQuote(): StockQuote | null {
-    if (!this.quoteQueue || this.quoteQueue.length === 0) {
-      console.log('[QuoteForge] Queue empty, rebuilding...');
-      this.rebuildQuoteQueue();
-    }
-
-    if (!this.quoteQueue || this.quoteQueue.length === 0) {
-      console.warn('[QuoteForge] getRandomQuote: queue still empty after rebuild');
-      return null;
-    }
-
-    const queue = this.quoteQueue;
-
-    let chosenIndex = 0;
-
-    if (this.lastCategory) {
-      const altIndex = queue.findIndex(q => q.category !== this.lastCategory);
-
-      if (altIndex !== -1) {
-        chosenIndex = altIndex;
-      } else {
-        console.log('[QuoteForge] All remaining quotes are from the same pack; allowing repeat source.');
+    // Build a fresh flat list from ALL stock packs every time
+    const allQuotes: StockQuote[] = [];
+    this.stockPacks.forEach((pack, packName) => {
+      if (!Array.isArray(pack) || pack.length === 0) {
+        return;
       }
-    }
+      allQuotes.push(...pack);
+    });
 
-    const [next] = queue.splice(chosenIndex, 1);
-
-    if (!next) {
-      console.warn('[QuoteForge] getRandomQuote: splice returned undefined');
+    if (allQuotes.length === 0) {
+      console.warn('[QuoteForge] getRandomQuote: no stock quotes available');
       return null;
     }
 
-    this.lastCategory = next.category;
+    console.log(`[QuoteForge] 🎲 Total stock quotes available: ${allQuotes.length}`);
+    console.log(`[QuoteForge] 🎯 Last used pack: ${this.lastCategory || 'none'}`);
 
-    console.log(`[QuoteForge] ✨ QUOTE SELECTED from pack: ${next.category}`);
-    console.log(`[QuoteForge]    Quote ID: ${next.id}`);
-    console.log(`[QuoteForge]    Queue remaining: ${queue.length} quotes`);
+    // Try to find a quote from a DIFFERENT pack than lastCategory
+    let attempts = 0;
+    const maxAttempts = 50;
+    let chosen: StockQuote | null = null;
+
+    while (attempts < maxAttempts && !chosen) {
+      const randomIndex = Math.floor(Math.random() * allQuotes.length);
+      const candidate = allQuotes[randomIndex];
+
+      // If this is our first quote OR it's from a different pack, use it
+      if (!this.lastCategory || candidate.category !== this.lastCategory) {
+        chosen = candidate;
+        console.log(`[QuoteForge] ✅ Found different pack on attempt ${attempts + 1}`);
+        break;
+      }
+
+      attempts++;
+    }
+
+    // Fallback: if all attempts failed (only one pack loaded), just pick randomly
+    if (!chosen) {
+      const randomIndex = Math.floor(Math.random() * allQuotes.length);
+      chosen = allQuotes[randomIndex];
+      console.log('[QuoteForge] ⚠️ All attempts used same pack (only one pack available?)');
+    }
+
+    if (!chosen) {
+      console.warn('[QuoteForge] getRandomQuote: failed to select a quote');
+      return null;
+    }
+
+    // Remember this pack as the last used
+    this.lastCategory = chosen.category;
+
+    console.log(`[QuoteForge] ✨ QUOTE SELECTED`);
+    console.log(`[QuoteForge]    Pack: ${chosen.category}`);
+    console.log(`[QuoteForge]    Quote ID: ${chosen.id}`);
     console.log(`[QuoteForge]    Last category now: ${this.lastCategory}`);
-    console.log(`[QuoteForge]    Text preview: "${next.text.substring(0, 60)}..."`);
+    console.log(`[QuoteForge]    Text preview: "${chosen.text.substring(0, 60)}..."`);
 
-    return next;
+    return chosen;
   }
 
   getAllStockQuotes(): StockQuote[] {
