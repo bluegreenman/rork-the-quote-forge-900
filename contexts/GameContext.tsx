@@ -22,9 +22,52 @@ import { INITIAL_BADGES } from "../constants/badges";
 import { createBackup, validateBackup, migrateGameState, createBackupV2, validateBackupV2, restoreFromBackupV2 } from "../utils/backup";
 import { buildItemArtPrompt, generateItemArt, canGenerateItemArt } from "../utils/itemArt";
 import { generateThemeTag } from "../utils/themeTag";
+import { STOCK_PACKS } from "../utils/stockPacks";
 
 const STORAGE_KEY = "verseforge_game_state";
 const THEME_KEY = "verseforge_theme";
+
+function buildStockData(): {
+  stockParsedFiles: ParsedFile[];
+  stockQuotes: Quote[];
+} {
+  const stockParsedFiles: ParsedFile[] = [];
+  const stockQuotes: Quote[] = [];
+
+  const packsByCategory: { [category: string]: Quote[] } = {};
+
+  STOCK_PACKS.forEach((stockQuote) => {
+    const packId = `stock_${stockQuote.category.toLowerCase().replace(/\s+/g, "_")}`;
+
+    const quote: Quote = {
+      id: `stock:${stockQuote.id}`,
+      text: stockQuote.text,
+      fileOrigin: stockQuote.category,
+      index: 0,
+      length: stockQuote.text.length,
+      isStock: true,
+      packName: stockQuote.category,
+    };
+
+    if (!packsByCategory[packId]) {
+      packsByCategory[packId] = [];
+    }
+    packsByCategory[packId].push(quote);
+    stockQuotes.push(quote);
+  });
+
+  Object.entries(packsByCategory).forEach(([packId, quotes]) => {
+    const packName = quotes[0]?.packName || packId;
+    stockParsedFiles.push({
+      fileId: packId,
+      fileName: packName,
+      quotes,
+      isStock: true,
+    });
+  });
+
+  return { stockParsedFiles, stockQuotes };
+}
 
 interface SessionState {
   isActive: boolean;
@@ -202,10 +245,36 @@ const useGameContext = () => {
           };
           
           console.log("[Migration] State migration complete - focusState:", migratedState.focusState);
-          setState(migratedState);
+          
+          const { stockParsedFiles, stockQuotes } = buildStockData();
+          console.log("[Stock Packs] Injecting", stockParsedFiles.length, "stock pack(s) with", stockQuotes.length, "quotes");
+          
+          const finalState = {
+            ...migratedState,
+            parsedFiles: [
+              ...stockParsedFiles,
+              ...migratedState.parsedFiles.filter(f => !f.isStock),
+            ],
+            quotes: [
+              ...stockQuotes,
+              ...migratedState.quotes.filter(q => !q.isStock),
+            ],
+          };
+          
+          setState(finalState);
         } else {
           console.log("[Load] No saved state, using DEFAULT_STATE");
-          setState(DEFAULT_STATE);
+          
+          const { stockParsedFiles, stockQuotes } = buildStockData();
+          console.log("[Stock Packs] Injecting", stockParsedFiles.length, "stock pack(s) with", stockQuotes.length, "quotes (fresh install)");
+          
+          const freshState = {
+            ...DEFAULT_STATE,
+            parsedFiles: stockParsedFiles,
+            quotes: stockQuotes,
+          };
+          
+          setState(freshState);
         }
 
         if (themeData) {
@@ -223,7 +292,13 @@ const useGameContext = () => {
 
   useEffect(() => {
     if (isLoaded) {
-      AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(state)).catch((error) =>
+      const userOnlyState = {
+        ...state,
+        quotes: state.quotes.filter(q => !q.isStock),
+        parsedFiles: state.parsedFiles.filter(f => !f.isStock),
+      };
+      
+      AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(userOnlyState)).catch((error) =>
         console.error("Failed to save game state:", error)
       );
     }

@@ -50,6 +50,8 @@ export interface Quote {
   fileOrigin: string;
   index: number;
   length: number;
+  isStock?: boolean;
+  packName?: string;
 }
 
 export interface Boon {
@@ -154,6 +156,7 @@ export interface ParsedFile {
   fileId: string;
   fileName: string;
   quotes: Quote[];
+  isStock?: boolean;
 }
 
 export interface GameState {
