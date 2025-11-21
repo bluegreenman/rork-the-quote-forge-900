@@ -18,7 +18,7 @@ import { useTts } from "../../hooks/useTts";
 import { useAutoMode } from "../../hooks/useAutoMode";
 
 export default function SanctumScreen() {
-  const { state, theme, readQuote, addQuotes, isLoaded, startSession, endSession, getSessionInfo, setFocusMode } = useGame();
+  const { state, theme, readQuote, addQuotes, isLoaded, startSession, endSession, getSessionInfo, setFocusMode, getAvailableStockPacks } = useGame();
   const colors = getThemeColors(theme);
   const [selectedFileId, setSelectedFileId] = useState<string | null>(null);
   const [previousFileCount, setPreviousFileCount] = useState<number>(0);
@@ -33,6 +33,9 @@ export default function SanctumScreen() {
   const boonFadeAnim = useState(new Animated.Value(0))[0];
 
   const { speak, stop, isSpeaking } = useTts();
+
+  const stockPacks = getAvailableStockPacks();
+  const allFiles = [...stockPacks, ...state.parsedFiles];
 
   const handleNextQuote = useCallback(() => {
     const result = readQuote();
@@ -94,7 +97,7 @@ export default function SanctumScreen() {
 
   useFocusEffect(
     React.useCallback(() => {
-      if (!isLoaded || !state.parsedFiles.length || !selectedFileId) return;
+      if (!isLoaded || !allFiles.length || !selectedFileId) return;
       
       console.log("[Sanctum] Tab focused - starting session for", selectedFileId);
       startSession("raiding", selectedFileId);
@@ -105,34 +108,34 @@ export default function SanctumScreen() {
         stop();
         stopAutoMode();
       };
-    }, [isLoaded, state.parsedFiles.length, selectedFileId, startSession, endSession, stop, stopAutoMode])
+    }, [isLoaded, allFiles.length, selectedFileId, startSession, endSession, stop, stopAutoMode])
   );
 
   useEffect(() => {
-    if (state.parsedFiles.length > 0) {
+    if (allFiles.length > 0) {
       if (state.parsedFiles.length > previousFileCount) {
         const latestFileId = state.parsedFiles[state.parsedFiles.length - 1].fileId;
         setSelectedFileId(latestFileId);
         setFocusMode("focus", latestFileId);
         setPreviousFileCount(state.parsedFiles.length);
       } else if (!selectedFileId && previousFileCount === 0) {
-        const firstFileId = state.parsedFiles[0].fileId;
+        const firstFileId = allFiles[0].fileId;
         setSelectedFileId(firstFileId);
         setFocusMode("focus", firstFileId);
         setPreviousFileCount(state.parsedFiles.length);
       }
     }
-  }, [state.parsedFiles.length, previousFileCount, selectedFileId, setFocusMode]);
+  }, [allFiles.length, state.parsedFiles.length, previousFileCount, selectedFileId, setFocusMode]);
 
   useEffect(() => {
     if (selectedFileId && state.focusState?.focusedFileId !== selectedFileId) {
       setFocusMode("focus", selectedFileId);
-      if (state.parsedFiles.length > 0) {
+      if (allFiles.length > 0) {
         endSession();
         startSession("raiding", selectedFileId);
       }
     }
-  }, [selectedFileId, state.focusState?.focusedFileId, state.parsedFiles.length, setFocusMode, startSession, endSession]);
+  }, [selectedFileId, state.focusState?.focusedFileId, allFiles.length, setFocusMode, startSession, endSession]);
   
   if (!isLoaded) {
     return (
@@ -180,8 +183,8 @@ export default function SanctumScreen() {
     }
   };
 
-  const hasFiles = state.parsedFiles.length > 0;
-  const currentFile = selectedFileId ? state.parsedFiles.find(f => f.fileId === selectedFileId) : null;
+  const hasFiles = allFiles.length > 0;
+  const currentFile = selectedFileId ? allFiles.find(f => f.fileId === selectedFileId) : null;
   const currentStats = selectedFileId ? state.scriptureStats[selectedFileId] : null;
 
   return (
@@ -292,9 +295,10 @@ export default function SanctumScreen() {
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={styles.scriptureList}
               >
-                {state.parsedFiles.map((file) => {
+                {allFiles.map((file) => {
                   const stats = state.scriptureStats[file.fileId];
                   const isSelected = selectedFileId === file.fileId;
+                  const isStockPack = file.fileId.startsWith('stock_');
                   const scriptureProgress = stats ? getScriptureXPProgress(stats.localXp, stats.localLevel) : null;
                   const timeSpent = stats?.timeSpentMinutes || 0;
                   const timeText = timeSpent >= 60 
@@ -326,6 +330,16 @@ export default function SanctumScreen() {
                       >
                         {file.fileName}
                       </Text>
+                      {isStockPack && !stats && (
+                        <Text
+                          style={[
+                            styles.scriptureCardStats,
+                            { color: isSelected ? "rgba(255,255,255,0.8)" : colors.textSecondary },
+                          ]}
+                        >
+                          {file.quotes.length} quotes · Stock Pack
+                        </Text>
+                      )}
                       {stats && (
                         <>
                           <Text

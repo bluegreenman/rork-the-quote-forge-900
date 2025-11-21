@@ -479,6 +479,19 @@ const useGameContext = () => {
     };
   }, []);
 
+  const getAvailableStockPacks = useCallback((): ParsedFile[] => {
+    const packNames = quoteForge.getPackNames();
+    return packNames.map((packName) => {
+      const packQuotes = quoteForge.getPackQuotes(packName);
+      const quotes = packQuotes.map((sq, idx) => convertStockQuoteToQuote(sq, idx));
+      return {
+        fileId: `stock_${packName.toLowerCase().replace(/\s+/g, '_')}`,
+        fileName: `📦 ${packName}`,
+        quotes,
+      };
+    });
+  }, [convertStockQuoteToQuote]);
+
   const readQuote = useCallback((): {
     quote: Quote | null;
     xpGained: number;
@@ -498,7 +511,13 @@ const useGameContext = () => {
     let sourceFileId: string | null = null;
     
     if (currentFocus.mode === "focus" && currentFocus.focusedFileId) {
-      const focusedFile = currentState.parsedFiles.find((f) => f.fileId === currentFocus.focusedFileId);
+      let focusedFile = currentState.parsedFiles.find((f) => f.fileId === currentFocus.focusedFileId);
+      
+      if (!focusedFile && currentFocus.focusedFileId.startsWith('stock_')) {
+        const stockPacks = getAvailableStockPacks();
+        focusedFile = stockPacks.find((f) => f.fileId === currentFocus.focusedFileId);
+      }
+      
       if (focusedFile && focusedFile.quotes.length > 0) {
         quotesToPickFrom = focusedFile.quotes;
         sourceFileId = focusedFile.fileId;
@@ -1052,7 +1071,17 @@ const useGameContext = () => {
         : { mode: "all" as const, focusedFileId: null };
       const updatedScriptureStats = { ...prev.scriptureStats };
       
-      if (mode === "focus" && fileId && updatedScriptureStats[fileId]) {
+      if (mode === "focus" && fileId) {
+        if (!updatedScriptureStats[fileId]) {
+          const stockPacks = getAvailableStockPacks();
+          const stockFile = stockPacks.find((f) => f.fileId === fileId);
+          const userFile = prev.parsedFiles.find((f) => f.fileId === fileId);
+          const fileName = stockFile?.fileName || userFile?.fileName || fileId;
+          
+          updatedScriptureStats[fileId] = initializeScriptureStats(fileId, fileName);
+          console.log("[Focus] Initialized stats for", fileName);
+        }
+        
         updatedScriptureStats[fileId] = {
           ...updatedScriptureStats[fileId],
           focusSessions: updatedScriptureStats[fileId].focusSessions + 1,
@@ -1069,7 +1098,7 @@ const useGameContext = () => {
         scriptureStats: updatedScriptureStats,
       };
     });
-  }, []);
+  }, [getAvailableStockPacks]);
   
   const getScriptureStats = useCallback((fileId: string): ScriptureStats | null => {
     return state.scriptureStats[fileId] || null;
@@ -1364,6 +1393,7 @@ const useGameContext = () => {
     setCharacterCard,
     generateItemArtForBoon,
     getItemArtGenerationStatus,
+    getAvailableStockPacks,
   };
 };
 
